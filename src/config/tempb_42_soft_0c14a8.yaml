@@ -1,0 +1,34 @@
+adapt:
+  online_lr: 0.01
+data:
+  cache_gb: 96
+  max_text_len: 512
+  num_workers: 4
+  root: ../dataset_pipeline
+  unified_pairs: ../dataset_pipeline/v2/unified_pairs.jsonl
+loss:
+  temperature: 0.1
+  w_deface: 1.0
+  w_legit: 1.0
+  w_ortho: 1.0
+modalities:
+  dom: true
+  http: true
+  text: true
+  visual: true
+model:
+  d: 256
+  dom_hidden: 128
+  dom_layers: 3
+  dropout: 0.15
+  http_in: 32
+  orthogonality: soft
+  text_backbone: sentence-transformers/all-MiniLM-L6-v2
+  text_frozen: true
+  visual_in: 512
+train:
+  accum: 2
+  batch: 16
+  epochs_finetune: 30
+  epochs_pretrain: 30
+  lr: 0.0001

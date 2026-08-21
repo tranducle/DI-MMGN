@@ -1,0 +1,12 @@
+# DI-MMGN runtime dependencies — TRANG-PAPER-1
+# Pinned to the versions verified on the build machine (2026-08-01).
+torch==2.6.0
+torch_geometric==2.7.0
+transformers==4.57.6
+sentence-transformers>=2.7.0
+numpy==2.3.5
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+playwright>=1.40.0
+Pillow>=10.0.0
+PyYAML>=6.0

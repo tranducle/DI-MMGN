@@ -1,0 +1,33 @@
+# PyTorch Models
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# MacOS
+.DS_Store
+
+# Data and logs
+*.log
+data/
+datasets/
+dataset_pipeline/
+*.csv
+*.json
+_audit_records.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
