@@ -20,8 +20,9 @@ However, relying strictly on the change vector discards the absolute context of 
 
 ## Data Availability
 
-The **LWDED Benchmark Dataset**, pre-extracted modality features, domain-blocked split policy, and deterministic CMS-mutation engine are used in this study. 
-To ensure reproducibility while maintaining security standards, the public dataset information can be provided upon reasonable request or found on the associated open-access data repository (link pending). 
+The **LWDED Benchmark Dataset** (v2: 10,446 temporal pairs, 195 domains, four attack vectors, pre-extracted modality features — DOM graphs, CLIP visuals, HTTP signals — domain-blocked split policy, and the deterministic CMS-mutation engine) is openly available on Zenodo under CC BY 4.0:
+
+**https://doi.org/10.5281/zenodo.22051075**
 
 ## Usage
 
