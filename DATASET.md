@@ -2,7 +2,7 @@
 
 **DOI:** [10.5281/zenodo.22051075](https://doi.org/10.5281/zenodo.22051075) · **License:** CC BY 4.0 · **Version:** v2.0 (2026-08-21)
 
-The canonical dataset release used by *DI-MMGN: Benign-Update Tolerant Website Defacement Detection via Concatenated Multi-Modal Change Vectors*.
+The canonical dataset release used by *DI-MMGN: Benign-Update Tolerant Website Defacement Detection via Snapshot-Concatenated Change Vectors*.
 
 ## Summary
 

@@ -1,6 +1,6 @@
 # DI-MMGN
 
-**Benign-Update Tolerant Website Defacement Detection via Concatenated Multi-Modal Change Vectors**
+**Benign-Update Tolerant Website Defacement Detection via Snapshot-Concatenated Change Vectors**
 
 ## Main Idea
 
