@@ -1,0 +1,404 @@
+                        2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+    A Novel Model for Detecting Website Defacements
+             Based on BERT and BiLSTM
+              Xuan Dau Hoang                                          Xuan Nhat Mai                              Phuong Mai Nguyen
+       Faculty of Information Security                        Faculty of Information Security               Faculty of Information Security
+   Posts and Telecommunications Institute                 Posts and Telecommunications Institute        Posts and Telecommunications Institute
+               of Technology                                          of Technology                                 of Technology
+               Hanoi, Vietnam                                         Hanoi, Vietnam                                Hanoi, Vietnam
+             dauhx@ptit.edu.vn                              nhatmx.b21at147@stu.ptit.edu.vn                mainp.b21at123@stu.ptit.edu.vn
+
+
+       Abstract—Over the past decade, web defacement and related                   Numerous causes of website and web application
+   forms of web-based attacks have emerged as significant security             defacement have been identified, with the most critical being
+   threats to enterprise and organizational systems. A single                  severe security vulnerabilities in web applications, websites,
+   defacement incident can result in severe consequences for the               or their hosting servers that enable adversaries to execute
+   affected party, including immediate disruption of website                   defacement attacks [1], [2]. Among the most prevalent and
+   functionality, reputational damage, and substantial financial               high-impact weaknesses are Cross-Site Scripting (XSS), SQL
+   losses. To mitigate these risks, various monitoring and detection           Injection (SQLi), remote and local file inclusion, poor account
+   mechanisms have been developed. However, many of the                        and password management, and the use of outdated software.
+   existing approaches are constrained in scope: some are
+   restricted to static web content, while others can process                      Defacement attacks can have serious consequences for
+   dynamic content but at the cost of substantial computational                website owners. Such incidents may immediately disrupt
+   overhead. Furthermore, current solutions often suffer from                  website functionality, damage organizational reputation, and
+   limited detection accuracy and elevated false positive rates,               compromise sensitive data, ultimately leading to substantial
+   largely due to the inadequate handling of key webpage elements              financial losses. Due to the widespread and severe
+   such as plain text content. To address these limitations, this              implications of defacement incidents, a variety of defensive
+   study introduces a novel web defacement detection model                     solutions have been developed. Existing countermeasures can
+   leveraging BERT and BiLSTM architectures, with a focus on
+                                                                               be broadly categorized into three groups:
+   features extracted from webpage plain text. Extensive
+   experiments conducted on a dataset comprising nearly 70,000                    1. Vulnerability scanning and remediation tools, such as
+   webpages demonstrate that the proposed model achieves                       Acunetix Web Application Security Testing [4], Trustwave
+   superior performance compared to prior approaches, attaining                App Scanner [5], and Mister Vulnerability Scanner [6];
+   an overall accuracy of 98.61% and an F1-score of 98.70%.
+                                                                                 2. Attack monitoring and detection platforms, including
+       Keywords—Website defacements, Website defacement                        Website Monitoring Service [7], Website Application
+   detection, BiLSTM based defacement detection, BERT based                    Monitoring [8], Website Defacement Monitoring [9], and
+   defacement detection.                                                       WebOrion Monitor [10];
+                              I. INTRODUCTION                                      3. Defacement detection techniques, which are the focus
+                                                                               of this study and will be further reviewed in Section II.
+       Defacement attacks against web applications and websites
+   constitute a prevalent category of web-based threats, wherein                   Nevertheless, many existing countermeasures remain
+   adversaries alter page content to manipulate or distort its                 limited in capability: some are applicable only to static web
+   visual appearance [1], [2]. Statistical data from Zone-h.org [3]            content, while others can handle dynamic content but incur
+   report approximately 500,000 defaced websites worldwide in                  significant computational overhead. In addition, current
+   2020, with an additional 200,000 cases recorded during the                  solutions often exhibit suboptimal detection accuracy and
+   first five months of 2021. An illustrative example is shown in              high false positive rates, primarily due to the insufficient
+   Figure 1, which captures the defacement of the official                     processing of critical webpage elements such as plain text
+   website www.sohuutritue.gov.vn on April 30, 2021,                           content. To overcome these limitations, this paper introduces
+   perpetrated by the hacking group “Overthink1877.”                           a novel web defacement detection model that integrates the
+                                                                               BERT - a large language model with BiLSTM – a deep
+                                                                               learning technique, leveraging plain text features extracted
+                                                                               from webpages. The proposed approach is designed to operate
+                                                                               effectively on both static and dynamic pages, while improving
+                                                                               detection accuracy and reducing false alarms. Specifically,
+                                                                               plain text content is extracted from webpages and
+                                                                               subsequently processed through BERT and BiLSTM
+                                                                               architectures to construct and validate the detection
+                                                                               framework using training data.
+                                                                                   The primary contributions of this study are summarized as
+                                                                               follows:
+   Fig. 1. Website sohuutritue.gov.vn was defaced on 30th April, 2021             - Development of a BERT + BiLSTM-based model for
+                                                                               web defacement detection using plain text features extracted
+                                                                               from webpages;
+
+
+
+
+979-8-3315-7790-2/25/$31.00 ©2025 IEEE                                    268
+                 2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+
+
+   - Comprehensive experimentation and evaluation of the          chosen for its ability to capture long-term dependencies in
+proposed model on a large-scale dataset containing almost         sequential data, making it highly suitable for text
+70,000 webpages.                                                  classification. Experiments on a dataset of 96,000 webpages
+                                                                  demonstrated strong performance, with 96.04% overall
+    The remainder of this paper is organized as follows:          accuracy and a 2.03% false positive rate.
+Section II reviews related studies; Section III details the
+proposed detection methodology, including preprocessing,             In summary, the main limitations of existing proposals for
+training, and detection stages; Section IV presents               defacement detection include:
+experimental results and analysis; and Section V concludes
+the paper with directions for future work.                           - Excessive computational overhead caused by complex
+                                                                  algorithms [12], [13];
+                     II. RELATED WORKS                               - Narrow scope, with many approaches limited to textual
+    As outlined in Section I, numerous approaches have been       or HTML features while inadequately processing CSS,
+proposed for web defacement detection over the past decade.       JavaScript, and embedded images, often relying on basic
+Within the scope of this paper, we focus on representative        hashing [11]-[15];
+works belonging to group (3), i.e., methods dedicated to
+                                                                     - Small experimental datasets, which undermine result
+defacement detection employing both simple and advanced
+                                                                  generalizability and reliability [11]-[15].
+techniques. The strengths and weaknesses of these approaches
+have been analyzed in [11]. Here, we highlight closely related        To address these challenges, our approach extends the
+proposals that utilize more sophisticated techniques, including   work in [16] by introducing a BERT-based preprocessing
+[12]-[16].                                                        layer prior to the BiLSTM component. Since BERT is
+                                                                  pretrained on massive text corpora, it enhances the model’s
+    In [12] and [13], genetic programming algorithms were
+                                                                  ability to capture semantic relationships among webpage text
+applied to construct detection profiles for website defacement.
+                                                                  tokens, thereby improving detection performance. The
+Webpage data were collected using 43 sensors organized into
+                                                                  proposed model is detailed in Section III.
+five groups, producing a 1,466-element feature vector.
+Detection was performed in two phases: during training, data         III. PROPOSED WEB DEFACEMENT DETECTION MODEL
+from legitimate webpages were vectorized to generate
+detection profiles, while during detection, monitored page        A. Overview BERT, DistilBERT and Baseline Models
+data were vectorized and compared to these profiles. A               1) Overview BERT and DistilBERT
+significant deviation would trigger an alarm. Although                BERT (Bidirectional Encoder Representations from
+effective, the approach incurs substantial computational costs    Transformers) is a transformer-based natural language
+due to the reliance on genetic programming and high-              processing (NLP) model introduced by Google AI in 2018
+dimensional feature vectors.                                      [18]. By employing a bidirectional attention mechanism,
+    In [11], traditional supervised machine learning              BERT effectively captures contextual relationships among
+techniques were employed for defacement detection.                words within sentences, leading to substantial improvements
+Webpages were vectorized using n-gram and term frequency          across a wide range of NLP tasks, including text classification,
+(TF) methods applied to HTML code, and models were                question answering, and information retrieval. The model is
+trained on a dataset of 300 defaced and 100 benign pages.         pre-trained on two core objectives, masked language
+Classifiers based on Naïve Bayes and J48 decision trees           modeling and next sentence prediction, enabling it to better
+achieved high accuracy with relatively few false alarms.          understand linguistic context. Through large-scale
+However, the method was limited by the small dataset size,        pretraining, BERT learns word dependencies in both left-to-
+reducing the reliability of results, and by its narrow focus on   right and right-to-left directions. In the proposed framework,
+HTML code, excluding critical components such as                  BERT is employed for tokenization and embedding of input
+JavaScript, CSS, and embedded images.                             data. Owing to its training on massive multilingual corpora,
+                                                                  BERT is capable of effectively modeling the semantic context
+    To address these issues, [14] proposed a hybrid model         of textual content extracted from webpages.
+combining signature-based detection with machine learning.
+The signature-based module first scanned HTML code for                DistilBERT [19], a distilled variant of BERT, was
+predefined attack signatures to rapidly detect known              developed to provide a smaller and more computationally
+defacements, while the machine learning module classified         efficient model while retaining much of BERT’s
+HTML content using trained classifiers. File integrity was        representational power. Pretrained as a compact, general-
+further validated with hashing. Experiments on 1,200 defaced      purpose language model, DistilBERT can be fine-tuned for
+and 1,200 normal webpages showed promising results.               downstream tasks with strong performance. Its development
+However, the hashing technique was only effective for static      was motivated by the need for lightweight models that can
+files. Building on this, [15] introduced a multi-layer model      support real-time NLP applications, particularly in resource-
+integrating machine learning for textual content analysis         constrained or edge environments where full-scale BERT
+(HTML, CSS, JavaScript) and hashing for image integrity           models may be impractical due to their high computational
+validation. While effective for detecting textual defacements,    cost. In this study, DistilBERT is utilized as a baseline model
+the reliance on hashing limited its effectiveness for embedded    for comparative evaluation.
+images, which are critical in many modern webpages.                 2) Baseline Models
+    In contrast, [16] proposed a BiLSTM-based deep learning           For benchmarking purposes, three related detection
+model that utilized plain text extracted from webpages instead    models were implemented alongside the proposed framework.
+of HTML code. The rationale was that the word distributions       These models, referred to as baseline models, are constructed
+in defaced and normal pages differ significantly. BiLSTM was      using the following techniques:
+
+
+
+
+                                                              269
+                     2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+
+
+    - word2vec + BiLSTM, as proposed in [16];                                   HTML files of both defaced and legitimate webpages. The
+                                                                                extracted text is then tokenized and embedded using the
+    - BERT + Fully Connected layers;                                            BERT model, after which the resulting representations are
+    - DistilBERT + Fully Connected layers.                                      passed to a BiLSTM network [17] for feature extraction and
+                                                                                model training. This process yields a classifier capable of
+  It is important to note that in our experimental setup, both                  distinguishing between defaced and normal webpages.
+BERT and DistilBERT are employed without fine-tuning.
+                                                                                    In the detection stage (Fig. 2(b)), the plain text content of
+B. The Proposed Detection Model                                                 a monitored webpage is first retrieved and subjected to the
+    The proposed web defacement detection model, illustrated                    same preprocessing and feature extraction pipeline as in the
+in Fig. 2, operates in two stages: (a) a training stage and (b) a               training phase. The processed representation is then evaluated
+detection stage. In the training stage (Fig. 2(a)), a labeled                   by the previously trained classifier to determine whether the
+dataset is constructed by extracting textual content from the                   monitored page is in a normal state or has been defaced.
+
+
+
+
+Fig. 2. Architecture of proposed model for web defacement detection: (a) Training stage and (b) Detection stage
+
+C. Data Preprocessing                                                           D. Model Training
+   The preprocessing of the training dataset, comprising both                      The training process of the proposed BERT + BiLSTM
+normal and defaced webpages, is conducted in three steps:                       model for webpage text content is carried out as follows:
+   - Step 1: Extraction of raw textual content from each                           - Step 1: Text content is tokenized using the BERT
+webpage, primarily from the title and body sections.                            tokenizer (bert-base-uncased). In this step, special tokens
+                                                                                [CLS] and [SEP] are added, and sequences are normalized to
+    - Step 2: Cleaning and normalization of the extracted text,                 a maximum length of 512 tokens. The tokenizer produces
+including conversion of HTML entities (e.g., ‘&amp;’,                           input tensors comprising:
+‘&nbsp;’) into standard characters and reduction of redundant
+whitespace to single spaces.                                                         + input_ids: token indices from the vocabulary;
+   - Step 3: Label assignment, where normal webpages are                           + attention_mask: binary indicators distinguishing valid
+annotated as 0 (Normal) and defaced webpages as 1                               tokens (1) from padding (0);
+(Defaced).
+                                                                                     + token_type_ids: segment identifiers.
+                                                                                   - Step 2: The input tensors are processed by the BERT
+                                                                                (bert-base-uncased) model. The model outputs the
+
+
+
+
+                                                                          270
+                  2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+
+
+last_hidden_state, which consists of 768-dimensional                    TABLE I. THE CONFUSION MATRIX AND ITS TP, TN, FP AND FN
+                                                                                              PARAMETERS
+embeddings representing the semantic features of each token.
+                                                                                                            Real Class
+    - Step 3: The last_hidden_state is passed through a
+BiLSTM layer with a hidden size of 128 to capture contextual                                     Defaced                 Normal
+information in both forward and backward directions. The              Predicted   Defaced   True Positives - TP    False Positives – FP
+final hidden vector from the forward pass is concatenated with          Class     Normal    False Negatives - FN   True Negatives - TN
+the initial hidden vector from the backward pass, yielding a
+256-dimensional representation.                                                    IV. EXPERIMENTS AND RESULTS
+    - Step 4: The 256-dimensional vector is passed through a        A. Experimental Dataset
+dropout layer (p = 0.3) to mitigate overfitting, followed by a
+fully connected layer that maps the features to two outputs             For the experiments, we employed the dataset of normal
+corresponding to the classification labels (0 – Normal or 1 –       and defaced webpages introduced in [16]. The original dataset
+Defaced).                                                           comprises 57,134 HTML files from normal webpages and
+                                                                    39,100 HTML files from defaced webpages. After removing
+    The model is trained using the cross-entropy loss function      duplicates and entries with empty textual content, the final
+and optimized with Adam (learning rate = 2e-5, batch size =         dataset consists of 69,912 HTML files, including 32,393
+32, epochs = 10). Throughout training, performance on the           normal pages labeled as 0 and 37,519 defaced pages labeled
+validation set is continuously monitored to prevent overfitting.    as 1.
+The model checkpoint with the lowest validation loss is
+retained as the final classifier.                                       The dataset was randomly partitioned into three subsets:
+
+E. Model Detection                                                     - Training set (80%): used for model training and
+                                                                    parameter optimization;
+    In the detection stage, the monitored webpage is first
+retrieved and preprocessed following Steps 1 and 2 outlined            - Validation set (10%): employed during training to
+in Section III.B. The resulting textual content is then             monitor accuracy and adjust parameters, thereby mitigating
+processed through the BERT and BiLSTM pipeline as                   overfitting;
+described in Steps 1-3 of Section III.C, producing a 256-
+                                                                        - Testing set (10%): reserved for evaluating the model’s
+dimensional feature vector. Finally, this vector is passed to the
+                                                                    performance after training.
+trained    classifier,  which      outputs     the     predicted
+label: 0 (Normal) or 1 (Defaced).                                   B. Experimental Scenarios and Results
+F. Performance Metrics                                                 To assess the effectiveness of the proposed detection
+                                                                    model in comparison with the baseline models, two evaluation
+    The detection performance of the proposed model is
+                                                                    scenarios were designed:
+evaluated using six metrics: precision (PRE), recall (REC),
+false positive rate (FPR), false negative rate (FNR), F1-score        - Test 1: Training and testing the proposed and baseline
+(F1), and overall accuracy (ACC). Specifically, PRE                 models using the complete HTML code of webpages;
+quantifies the proportion of correctly identified defacements
+among all predicted defacements, while REC measures the               - Test 2: Training and testing the proposed and baseline
+proportion of correctly identified defacements among all            models using the extracted pure text content of webpages.
+actual defacements. FPR denotes the proportion of normal               Additionally, we reimplemented the detection model
+webpages incorrectly classified as defaced, and FNR                 proposed in [16] on the same dataset for comparative analysis.
+represents the proportion of defaced pages incorrectly
+classified as normal. The F1-score provides the harmonic                 The performance results are reported in Table II and Table
+mean of PRE and REC, reflecting their balance, whereas ACC          III, corresponding to the use of full HTML code and pure text
+captures the overall classification accuracy. These metrics are     content, respectively. The findings indicate that models
+computed using the following formulas:                              trained on pure text content consistently achieve superior
+                                                                    performance compared to those trained on full HTML code.
+          𝑃𝑅𝐸 =
+                   𝑇𝑃
+                                                 (1)                Furthermore, the BiLSTM-based architecture outperforms
+                𝑇𝑃 + 𝐹𝑃                                             models based solely on BERT and DistilBERT. Overall, the
+          𝑅𝐸𝐶 =
+                   𝑇𝑃
+                                                 (2)                hybrid BERT + BiLSTM model demonstrates the best
+                𝑇𝑃 + 𝐹𝑁                                             performance across both experimental settings.
+                   𝐹𝑃
+          𝐹𝑃𝑅 =                                  (3)                   Table IV presents a performance comparison between the
+                𝐹𝑃 + 𝑇𝑁
+                   𝐹𝑁                                               proposed model and prior approaches. The results
+          𝐹𝑁𝑅 =                                  (4)                demonstrate that the proposed BERT + BiLSTM model
+                𝐹𝑁 + 𝑇𝑃
+                    2𝑇𝑃                                             consistently outperforms earlier methods based on Decision
+          𝐹1 =                                   (5)                Tree, Random Forest, and standalone BiLSTM algorithms.
+               2𝑇𝑃 + 𝐹𝑃 + 𝐹𝑁
+          𝐴𝐶𝐶 =
+                      𝑇𝑃 + 𝑇𝑁
+                                                 (6)                C. Discussion
+                𝑇𝑃 + 𝑇𝑁 + 𝐹𝑃 + 𝐹𝑁                                       Several key observations can be drawn from the empirical
+   where, TP, TN, FP and FN are parameters of the confusion         results presented in Tables II and III:
+matrix presented in Table I.                                           - Detection models utilizing the extracted textual content
+                                                                    of webpages consistently outperform those using full HTML
+                                                                    code across all evaluated techniques, including BiLSTM,
+                                                                    BERT, DistilBERT, and BERT + BiLSTM. This
+
+
+
+
+                                                                271
+                 2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+
+
+improvement is attributed to the fact that textual content             based model attains 98.61% for accuracy and 98.70% for the
+provides concise and relevant semantic information for attack          F1-score, representing a significant performance gain.
+detection, whereas raw HTML code introduces additional
+noise.                                                                     The superior performance of the proposed BERT +
+                                                                       BiLSTM model over previous approaches can be attributed to
+    - All evaluated models, including BiLSTM, BERT,                    three key factors. First, the use of plain textual features
+DistilBERT, and BERT + BiLSTM, achieve strong                          extracted from webpages is particularly effective for
+performance with F1-scores exceeding 90%. Among these,                 defacement detection, as malicious actors often leave
+the standalone BERT model yields the lowest performance,               distinctive textual signatures following an attack [16]. Second,
+while the hybrid BERT + BiLSTM model achieves the                      employing BERT for data preprocessing is advantageous
+highest, with F1-scores of 94.31% and 98.70% when trained              because its pretraining on large-scale corpora enables it to
+on textual content.                                                    capture accurate semantic and contextual representations of
+                                                                       textual content. Third, the integration of BiLSTM is well-
+    - The comparative analysis in Table IV further validates           suited for modeling sequential text data, as its bidirectional
+the superiority of the proposed BERT + BiLSTM model over               LSTM units exploit both past and future contextual
+prior approaches. Specifically, models based on Decision               dependencies, thereby enhancing the model’s ability to detect
+Tree, Random Forest, and BiLSTM achieve accuracy/F1-
+                                                                       subtle patterns indicative of defacement.
+scores    of     87.33%/84.40%,     93.88%/92.26%,      and
+97.38%/97.54%, respectively, whereas the BERT + BiLSTM-
+
+                         TABLE II. PERFORMANCE METRICS OF PROPOSED AND BASELINE MODELS USING HTML CODE
+
+                       Detection models           ACC (%)   PRE (%)          REC (%)        F1 (%)      FPR (%)      FNR (%)
+                     Word2vec + BiLSTM             96.63        96.65          96.62        96.63         3.35          3.38
+                   BERT + Fully Connected          90.65        95.34          85.49        90.15         4.18         14.51
+                 DistilBERT + Fully Connected      90.80        94.04          87.14        90.46         5.53         12.86
+              BERT + BiLSTM + Fully Connected      97.86        99.15          96.55        97.83         0.83          3.45
+
+                       TABLE III. PERFORMANCE METRICS OF PROPOSED AND BASELINE MODELS USING TEXT CONTENT
+
+                       Detection models           ACC (%)   PRE (%)          REC (%)       F1 (%)       FPR (%)      FNR (%)
+                     Word2vec + BiLSTM             97.38     98.37             96.72        97.54         1.85         3.28
+                   BERT + Fully Connected          93.94     95.10             93.53        94.31         5.59         6.47
+                 DistilBERT + Fully Connected      94.49     95.37             94.33        94.85         5.32         5.67
+              BERT + BiLSTM + Fully Connected      98.61     99.33             98.08        98.70         0.77         1.92
+
+                           TABLE IV. PERFORMANCE COMPARISON OF PROPOSED MODEL AND PREVIOUS PROPOSALS
+
+                       Detection models           ACC (%)   PRE (%)          REC (%)       F1 (%)       FPR (%)      FNR (%)
+                 Decision tree-based model [11]    87.33        84.4           84.40        84.40        10.67         15.60
+                Random forest-based model [15]     93.88     93.81             90.76        92.26         4.03         9.24
+                   Word2vec + BiLSTM [16]          97.38     98.37             96.72        97.54         1.85         3.28
+              BERT + BiLSTM + Fully Connected      98.61     99.33             98.08        98.70         0.77         1.92
+
+
+
+                       V. CONCLUSION                                   overhead during both training and detection, thereby
+                                                                       strengthening the practical applicability of the proposed
+    This paper introduces a novel web defacement detection             approach for real-world web defacement detection.
+model that integrates BERT and BiLSTM to exploit the
+semantic and contextual features of textual content extracted                                  ACKNOWLEDGMENT
+from both normal and defaced webpages. The proposed
+approach achieves high detection accuracy while reducing                   Authors sincerely thank the Cyber Security Lab, Posts and
+false alarms, owing to the complementary strengths of BERT             Telecommunications Institute of Technology, Hanoi, Vietnam
+in contextual representation learning and BiLSTM in                    for the facility support to complete this research project.
+sequential dependency modeling. Extensive experiments on a                                           REFERENCES
+dataset of nearly 70,000 webpages, including over 32,300
+                                                                       [1]   Imperva, Website Defacement Attack, https://www.imperva.com
+normal and 37,500 defaced samples, demonstrate that the                      /learn/application-security/website-defacement-attack/, accessed May
+proposed model substantially outperforms existing detection                  2025.
+methods across multiple evaluation metrics.                            [2]   Trend Micro, The Motivations and Methods of Web Defacement,
+                                                                             https://www.trendmicro.com/en_us/research/18/a/hacktivism-web-
+    Looking forward, future work will focus on further                       defacement.html, accessed May 2025.
+improving the model by incorporating additional feature sets           [3]   Zone-H.org, http://zone-h.org/archive, accessed May 2025.
+to (i) enhance detection rates while minimizing false alarms,          [4]   Acunetix, Acunetix Vulnerability Scanner, https://www.acunetix.com
+particularly false negatives, and (ii) reduce computational                  /vulnerability-scanner/, accessed in May 2025.
+
+
+
+
+                                                             272
+                      2025 RIVF International Conference on Computing and Communication Technologies (RIVF)
+
+
+
+
+[5]  Trustwave,         App        Scanner,       https://www.trustwave.com            with Applications, 38 (2011) 12521–12530, Elsevier, 2011.
+     /Products/Application-Security/App-Scanner-Family/App-Scanner-                    https://doi.org/10.1016/j.eswa.2011.04.038.
+     Enterprise/, accessed in May 2025.                                           [14] X.D. Hoang, N.T. Nguyen. Detecting Website Defacements Based on
+[6] Misterscanner, Vulnerability Scanner, https://misterscanner.com,                   Machine Learning Techniques and Attack Signatures, Computers 2019,
+     accessed in May 2025.                                                             8, 35. https://doi.org/10.3390/computers8020035.
+[7] Vietnam Cyberspace Security Technology, VNCS Web Monitoring                   [15] X.D. Hoang, N.T. Nguyen. A Multi-layer Model for Website
+     Service,        https://vncs.vn/en/tin-tuc/detail-vncs-launches-the-first-        Defacement Detection. In SoICT’19: Tenth International Symposium
+     online-website-monitoring-service-in-vietnam-281, accessed May                    on Information and Communication Technology, December 4 – 6, 2019
+     2025.                                                                             | Hanoi - Ha Long Bay, Vietnam. ACM, New York, NY, USA, 6 pages.
+[8] Nagios Enterprises, LLC. Web Application Monitoring.                               https://doi.org/10.1145/3368926.3369730.
+     https://www.nagios.com/solutions/web-application-monitoring/,                [16] X.D. Hoang, T.H. Nguyen, H.D. Pham. A novel model for detecting
+     accessed May 2025.                                                                web defacement attacks transformer using plain text features.
+[9] Site24x7. Website Defacement Monitoring. https://www.site24x7.com                  Indonesian Journal of Electrical Engineering and Computer Science
+     /monitor-webpage-defacement.html, accessed May 2025.                              (IJEECS),        vol.     37,    no.     1,     pp.232-240,    2024.
+                                                                                       http://doi.org/10.11591/ijeecs.v37.i1.pp232-240.
+[10] WebOrion. WebOrion Monitor. https://www.weborion.io/monitor/,
+     accessed May 2025.                                                           [17] How to Develop a Bidirectional LSTM For Sequence Classification in
+                                                                                       Python with Keras, https://machinelearningmastery.com/develop-
+[11] X.D. Hoang. A Website Defacement Detection Method Based on                        bidirectional-lstm-sequence-classification-python-keras/,   accessed
+     Machine Learning Techniques. In SoICT ’18: Ninth International                    May 2025.
+     Symposium on Information and Communication Technology,
+     December 6–7, 2018, Da Nang City, Viet Nam. ACM, New York, NY,               [18] J. Devlin, M.W. Chang, K. Lee, K. Toutanova. BERT: Pre-training of
+     USA, 6 pages. https://doi.org/10.1145/3287921.3287975.                            Deep Bidirectional Transformers for Language Understanding. 2019.
+                                                                                       arXiv, https://arxiv.org/pdf/1810.04805.
+[12] A. Bartoli, G. Davanzo and E. Medvet. A Framework for Large-Scale
+     Detection of Web Site Defacements. ACM Transactions on Internet              [19] V. Sanh, L. Debut, J. Chaumond, T. Wolf. DistilBERT, a distilled
+     Technology,           Vol.10,         No.3,          Art.10,       2010.          version of BERT: smaller, faster, cheaper and lighter. 2020. arXiv.
+     https://doi.org/10.1145/1852096.1852098.                                          https://doi.org/10.48550/arXiv.1910.01108.
+[13] G. Davanzo, E. Medvet and A. Bartoli. Anomaly detection techniques           [20] Alexa,      Top       1    million     domains. [Available   online]
+     for a web defacement monitoring service. Journal of Expert Systems                http://s3.amazonaws.com/alexa-static/top-1m.csv.zip, accessed May
+                                                                                       2024.
+
+
+
+
+                                                                              273
+

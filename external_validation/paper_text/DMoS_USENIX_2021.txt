@@ -1,0 +1,1242 @@
+    Scalable Detection of Promotional Website
+    Defacements in Black Hat SEO Campaigns
+Ronghai Yang, Sangfor Technologies Inc.; Xianbo Wang, The Chinese University
+ of Hong Kong; Cheng Chi, Dawei Wang, Jiawei He, and Siming Pang, Sangfor
+   Technologies Inc.; Wing Cheong Lau, The Chinese University of Hong Kong
+    https://www.usenix.org/conference/usenixsecurity21/presentation/yang-ronghai
+
+
+
+
+       This paper is included in the Proceedings of the
+              30th USENIX Security Symposium.
+                               August 11–13, 2021
+                                 978-1-939133-24-3
+
+
+
+
+                                        Open access to the Proceedings of the
+                                          30th USENIX Security Symposium
+                                              is sponsored by USENIX.
+                        Scalable Detection of Promotional Website Defacements
+                                     in Black Hat SEO Campaigns
+
+                               Ronghai Yang*,1 , Xianbo Wang*,2 , Cheng Chi1 , Dawei Wang1 ,
+                                   Jiawei He1 , Siming Pang1 , and Wing Cheong Lau2
+                           1 Sangfor Technologies Inc., 2 The Chinese University of Hong Kong
+
+
+
+
+                             Abstract                               1    Introduction
+Miscreants from online underground economies regularly
+exploit website vulnerabilities and inject fraudulent content       With the development of online underground economies, com-
+into victim web pages to promote illicit goods and services.        promising high-ranking vulnerable websites and injecting
+Scalable detection of such promotional website defacements          fraudulent content to promote illicit goods/ services, e.g., unli-
+remains an open problem despite their prevalence in Black           censed drugs, pornography, counterfeit, and illegal gambling
+Hat Search Engine Optimization (SEO) campaigns. Adver-              operations, appears to be a lucrative strategy and thriving
+saries often manage to inject content in a stealthy manner          practice [33, 35]. Since search engines drive the majority of
+by obfuscating the description of illicit products and/or the       web traffic [26], miscreants often leverage this as a Black Hat
+presence of defacements to make them undetectable. In this          Search Engine Optimization (SEO) technique to promote their
+paper, we design and implement DM O S - a Defacement Mon-           products. In this paper, we refer to such profit-motivated cam-
+itoring System which protects websites from promotional             paigns as promotional website defacements, or defacements
+defacements at scale. Our design is based on two key observa-       in short. Promotional defacements can inflict significant harm
+tions: Firstly, for effective advertising, the obfuscated jargons   on the compromised websites, causing reputational damage,
+of illicit goods or services need to be easily understood by        traffic hijacking, search engine penalty/ blockade, and thus
+their target customers (e.g., sharing similar shape or pronun-      revenue loss. According to the IMF, the US Internet under-
+ciation). Secondly, to promote the underground business, the        ground economy is estimated to contribute to 5.4% of its
+defacements are crafted to boost search engine ranking of           GDP [28], for which defacements are one of the major promo-
+the defaced web pages while trying to stay stealthy from the        tional channels. Given the substantial economic incentives,
+maintainers and legitimate users of the compromised websites.       defacements have become increasingly prominent: Between
+Leveraging these insights, we first follow the human conven-        1998 and 2016, the number of reported incidents per year
+tion and design a jargon normalization algorithm to map             grew from a few thousand to more than one million [36].
+obfuscated jargons to their original forms. We then develop a       In some countries, there are regulatory requirements for the
+tag embedding mechanism, which enables DM O S to focus              involved parties, e.g. search engines, to detect promotional
+more on those not-so-visually-obvious, yet site-ranking influ-      defacements so as to thwart the spread of illegal goods and ser-
+ential HTML tags (e.g., title, meta). Consequently, DM O S          vices. Unfortunately, promotional defacements remain elusive
+can reliably detect illicit content hidden in compromised web       and difficult to root out despite their prevalence and consid-
+pages. In particular, we have deployed DM O S as a cloud-           erable damages. For example, Google has to update its page
+based monitoring service for a five-month trial run. It has         ranking algorithm against defacements for more than 500
+analyzed more than 38 million web pages across 7000+ com-           times per year [40].
+mercial Chinese websites and found defacements in 11% of               To tackle this challenge, we decide to build an easy-to-
+these websites. It achieves a recall over 99% with a precision      deploy cloud-based defacement monitoring service. In con-
+about 89%. While the original design of DM O S focuses on           trast, end-host-based solutions would require software modi-
+the detection of Chinese promotional defacements, we have           fication/ installation on customer web-servers, which hinders
+extended the system and demonstrated its applicability for          usability and deployability. Note also that one cannot de-
+English website defacement detection via proof-of-concept           tect defacements by merely tracking changes with respect
+experiments.                                                        to a “gold” (reference) copy of a webpage. This is due to
+                                                                    the dynamic nature of modern web pages, especially those
+    ∗ First two authors contributed equally to this work.           with user-generated content like posting and follow-up com-
+
+
+
+USENIX Association                                                                     30th USENIX Security Symposium           3703
+ments. Meanwhile, promotional defacers have advanced be-                   tags in the imperceptible yet index-impacting regions of
+yond the use of old black hat SEO tricks such as keyword                   a web page.
+stuffing and link farming [23]. For example, they have in-              • Jargon Normalization Algorithm (JNA). While defac-
+troduced Stealthy Defacement techniques by carefully se-                   ers and their target customers can craft arbitrary jargons
+lecting a few site-ranking influential regions in a web page               in theory, they need to be readily understood by human
+and make tiny modifications in these regions only. By doing                subjects in practice. Therefore, these jargons often share
+so, the defacer can keep the illicit content unnoticeable from             similar shapes or pronunciation with the original forms.
+law-enforcement officials as well as the maintainers/ legiti-             We therefore build the first full-featured jargon normal-
+mate users of the compromised website while being indexed                  ization algorithm to facilitate NLP models to understand
+and ranked highly by search engines. Worse still, promoters                the authentic meaning of such obfuscated jargons.
+of illicit products have evolved to conspire with consumers          With these two techniques, we design and implement DM O S
+searching for such goods to circumvent content-based de-             to automatically detect promotional defacements in a scal-
+tection via Keyword Obfuscation: Since it is increasingly            able manner. Unlike proof-of-concept studies, DM O S is
+difficult to advertise or search for illicit products based on       production-ready. In fact, DM O S has already been deployed
+their standard names or related keywords, defacers and illicit       as a security monitoring service by a key Chinese cyberse-
+goods seekers have developed a vocabulary of jargons, i.e., ob-      curity service provider for its enterprise customers. During
+fuscated keywords of illicit products, to bypass the blockade        the initial months of the deployment of DM O S, it has served
+of search engines.                                                   to monitor 7000+ commercial websites by analyzing more
+    These new evasion techniques have rendered conventional          than 38 million web pages and detected defacements among
+Natural Language Processing (NLP)-based detection schemes            over 11% of those sites. We have manually verified the re-
+ineffective due to the following reasons: 1) Although human          sults, reported them to the site owners, and received their
+subjects can readily understand the obfuscated and constantly        confirmation. It also enables the uncovering of new types of
+evolving jargons for illicit goods, standard NLP models can-         defacement techniques. In summary, this paper has made the
+not recognize those jargons and their intent without retraining.     following technical contributions:
+For instance, while typical NLP models can tell “MARK SIX”              • New Techniques. We present the first industry-ready
+is related to gambling, they cannot infer the context of its               tool, DM O S, to enable scalable detection of promotional
+obfuscated form “M4RK SIX”. 2) The context can be very                    website defacements. In particular, we have developed
+different and diverse across various content elements (iden-               a set of techniques to neutralize the new evasion tricks
+tified by their corresponding HTML tags) within a single                   performed by defacers. Our approach of building a tag-
+web page. For example, a news article within a web page                    embedding model and normalization of obfuscated char-
+can be interlaced with not-directly-relevant but legitimate                acters/jargons can effectively and precisely identify de-
+advertisements. Without explicit modeling of the different se-             faced web pages. We have conducted large scale testing
+mantics associated with each tag, it is easy for a conventional           with DM O S on more than 38 million Chinese web pages
+NLP-based scheme to incorrectly flag legitimate content, e.g.,             and performed proof-of-concept experiments on over 30
+embedded advertisements, as defacements. It is also difficult              thousand English web pages.
+to pinpoint the small yet illicit snippets introduced by stealthy       • Measurement Study. Through collaboration with a key
+defacements without understanding the semantics of each tag.               industrial company, we systematically conduct a large-
+As a result, it remains challenging, even for first-tier search            scale measurement study on the security of commercial
+engines, to detect imperceptible promotional defacements. A               websites to reveal the characteristics of promotional web-
+case in point: 36% of popular searches still return at least one           site defacements and quantify their pervasiveness.
+malicious link [29].                                                    • New Findings. We uncover new types of defacement
+    In this paper, we present DM O S, an industrial-strength,              techniques/ preferences that enhance our understanding
+scalable monitoring/ detection solution for promotional web-               of the online underground ecosystem. By effectively
+site defacements. Notice that whatever actions were taken by               catching defacements at their early stage, we substan-
+the defacers, their objective is to promote the illicit content to         tially raise the bar to thwart large-scale promotional de-
+their target consumers via legitimate search engines. This key             facement campaigns.
+observation motivates us to develop a solution based on the             • New Dataset. We present a semi-automatic approach
+following techniques:                                                      to collect defacement datasets and release an English
+    • Tag Embeddings. To advertise the illicit content, defac-             defacement dataset [17] to the research community.
+      ers need to optimize stealthy defacements (by modify-             Roadmap. The remainder of this paper is organized as
+      ing a few important tags only) to boost the ranking of         follows: Section 2 provides the background of our work. Sec-
+      the resultant page in search results. Towards this end,        tion 3 elaborates the design of DM O S. Section 4 evaluates the
+      we propose a new tag-embedding model, which follows            performance of DM O S. Section 5 presents the measurement
+      search-engine indexing algorithms to focus on text and         studies and reports new findings. Section 6 discusses the lim-
+
+
+
+3704    30th USENIX Security Symposium                                                                        USENIX Association
+                                                                                                                                 Defaced webpage in search results
+                                                      Try with jargon
+                        六合彩 (MARK SIX)                                       六台彩 (M4RK SIX)
+                                                                                                                         e   s
+                                                                                                                by g i n
+                                                                                                            xe d en
+                                                                                                          de ch
+                                                  Consumer searches for                                 In ear
+                                                                                                          s                                            Path A: Hint
+                                                  illicit content
+
+
+                  https://benign.com/index.html                         https://benign.com/index.html
+                                                                                                                                                 http://m4rksix.cn
+
+                                                      Tiny defacement             Illicit Promotion Content           Path B: Redirect
+                                                                                                                                                Illegal Gambling
+                                                                                                                                                     Website
+
+                                                                                                                                 Consumer eventually finds
+                   Defacer attacks and controls a benign web server (benign.com)                                                 illicit content provider
+
+
+          Figure 1: Conspiring Acts of a Defacer and an Illicit Content Seeker via Promotional Website Defacements
+itations and further research directions. Section 7 describes                         even when a defacement monitoring system is running on the
+the related work and Section 8 concludes this paper.                                  webserver.
+
+                                                                                      2.2         Search Engine Policies
+2     Background
+                                                                                      Although the primary goal of search engines is to make web
+                                                                                      pages universally accessible, they need to cleanse the search
+In this section, we first explain why defacements are widely
+                                                                                      results to comply with legal/ regulatory requirements as well
+employed for black hat SEO. We then introduce existing coun-
+                                                                                      as to improve user experience. Certain types of content are
+termeasures taken by search engines against malicious content
+                                                                                      commonly censored by most search engines. These include
+and black hat SEO. We also show how seekers of illicit goods
+                                                                                      sexually explicit materials, pirated contents, solicitation of
+use jargons as search keywords. We then describe the overall
+                                                                                      illegal services, as well as sensitive personal information [27].
+process of promotional website defacements and illustrate
+                                                                                      Search results belonging to these categories are either re-
+the conspiring acts between the defacers and their target con-
+                                                                                      moved upon valid requests or pruned automatically [30].
+sumers. Finally, we discuss other conventional defacement/
+                                                                                         It is a common practice for search engines to sanitize
+black hat SEO techniques.
+                                                                                      their results by critically reviewing any web pages containing
+                                                                                      blocked keywords. As such, defacers often use obfuscated
+2.1    Defacements for Black Hat SEO                                                  jargons in their promotional content and expect their target
+                                                                                      customers to search for their goods/ services using the same
+Search Engine Optimization (SEO) is the process of making                             jargons. This can be observed by, e.g., comparing the search
+a website more visible to its target audience by boosting its                         results of MARK SIX (i.e.六合彩) and M4RK SIX (i.e.六台
+ranking among the relevant results returned by mainstream                             彩) returned by Microsoft Bing. The first term is a blocked
+search engines. It is expensive and slow to increase the search-                      gambling keyword, and the returned search results are all nor-
+engine-visibility of a website through legitimate, “organic”                          mal websites. In contrast, the second term is an obfuscated
+content enhancement. An illegal short-cut is to hack into popu-                       jargon with a similar shape. In this case, Bing returns a long
+lar websites and plant promotional content and referring links                        list of illegal gambling websites.
+for the illicit pages. Due to its cost-effectiveness, promotional
+website defacements have been widely adopted as a means of
+                                                                                      2.3         Active Consumers Search for Jargons
+black hat SEO.                                                                        Active consumers are users who actively look for the illicit
+   Defacers can take various approaches to hack into target                           products they demand. For underground markets, active con-
+websites, including but not limited to SQL injection, remote                          sumers are prevalent due to the difficulty of promoting prod-
+command execution (RCE), and social engineering. They                                 ucts via legal channels and scarce supply. Most people find
+often use recently disclosed vulnerabilities (0-day or N-day)                         content on the Internet through search engines with relevant
+for batch scanning and exploitation. Sometimes, attackers                             keywords. However, illicit content is not trivially searchable
+only crack the login credentials of the content management                            since search engines usually block related keywords. Active
+system (CMS) to escalate their privilege to edit articles. Worse                      consumers, who are aware of blocking, have evolved to search
+still, defacers may gain command execution access to the                              with obfuscated keywords to replace the blocked ones. There
+hacked web server and have more flexible or full control of                           are also cases where consumers need to transform the key-
+the website. In the latter case, it is possible to evade detection                    word in various forms by trial and error until they find the de-
+
+
+
+USENIX Association                                                                                                    30th USENIX Security Symposium                  3705
+sired content. During this process, new obfuscated keywords,
+                                                                                                   (title,s1)
+i.e., jargons, are coined. Since the rules that consumers use
+to obfuscate keywords should be natural and straightforward                                         (a, s2)
+
+
+
+
+                                                                                                        ...
+to a human subject, most coined jargons can be categorized
+                                                                                                    (p, sM)
+into two types: One is homophonic jargon, which replaces the             Search Engine
+                                                                           Dork Query               HTML
+original word/ character with another of similar pronunciation.         (Section 3.1.1)            Parser
+Another is homomorphic jargon, which uses a word/ character
+with a similar shape. We discuss these two types of jargons in                                   M4RK SIX（六台彩）
+                                                                                               =>MARK SIX （六合彩）
+detail in Section 3.2.2.
+                                                                        Website Crawlers            Jargon                 Tag-aware Machine-
+                                                                         (Section 3.1.2)        Normalization                learning Models
+
+2.4    An Example of a Defacement-Driven Pro-                           Web Page Acquisition    Web Page Pre-processing    Defacement Detection
+
+       motional Campaign
+                                                                                  Figure 2: System Overview of DM O S
+Figure 1 shows the walk-through of a defacement-driven pro-
+motional campaign for illicit goods/ services. It helps readers          visitors or search engines dynamically. User-Agent, Ref-
+understand both actors’ motivation and rationale: the illicit-           erer header, IP address, etc., are inspected to present the
+goods-seeking consumer and the defacer who promotes/ of-                 illicit content only to the target customers.
+fers the goods. The upper part of Figure 1 shows the typical           Since illicit solicitations are being vigorously censored by
+behavior of a consumer. As mentioned in Section 2.2, the orig-      search engines, defacers have been forced to evolve their tech-
+inal keywords related to illicit content are likely to be blocked   niques. For example, there is a phase-out of old techniques
+by search engines. The consumer’s natural reaction is to try        like keyword stuffing as it involves extensive modifications
+other keywords that are not blocked, namely, the so-called          of the web page and thus can be easily detected by search
+jargons which are obfuscated words/ terms with similar shape        engines. In contrast, modern defacers mostly perform stealthy
+or pronunciation.                                                   defacements and use obfuscated jargons, which tend to be
+   Expecting such behavior from their consumers, defacers           more elusive yet effective. Nevertheless, whatever techniques
+would use those jargons for black hat SEO. As described in          defacers use, they are limited to promote products to their cus-
+Section 2.1, defacers hack into popular websites and perform        tomers via search engines. Based on this observation, DM O S
+tiny modification to insert their promotional content, hoping       can detect defacements generally and robustly.
+that the stealthy defacement can evade detection and indexed
+by search engines. When consumers search the jargons and
+find the defaced website among the search results, there are
+                                                                    3     Design of DM O S
+usually two ways for the consumer to reach the soliciting web-
+                                                                    Figure 2 depicts the overall design of DM O S. At a high level,
+site. Firstly, marked as "Path A" in the figure, the consumer
+                                                                    the workflow of DM O S consists of 3 phases. In the Web Page
+can infer the illicit content information based on the hints
+                                                                    Acquisition phase, we apply the search engine dork query [15],
+left by the defacer, e.g., website URL or contact information.
+                                                                    which uses advanced search operators (e.g., site:, inurl:, etc.),
+Secondly, the consumer can click on the search results and
+                                                                    to find suspicious web pages under a given domain. We then
+visit the defaced web page, as illustrated by "Path B".
+                                                                    pre-process and normalize the obfuscated jargons in the Web
+                                                                    Page Pre-processing phase so that we can leverage NLP tech-
+2.5    Other Defacement/ Black Hat SEO Tech-                        niques to detect defacements in the third phase. Due to the
+                                                                    target market of our collaborating industrial partner, we focus
+       niques                                                       on defacement detection for Chinese websites in this section.
+Below we discuss other existing defacement/ black hat SEO           Note however that, our approach is general: in Section 4.4,
+techniques:                                                         we will demonstrate how DM O S can be extended to detect
+   • Keyword stuffing. The number of keywords contained             defacements of web pages in other languages.
+     in a web page is important for the page rank score. Defac-
+     ers can thereby include a spectrum of trending keywords        3.1     Web Page Acquisition for Training
+     to associate the illicit website with many hot words.
+   • Link farm [23]. To accumulate a large number of in-            It is a complex, labor-intensive process to collect and label
+     coming links pointed to the illicit websites, defacers can     a large dataset of web pages to cover a wide range of de-
+     compromise high page-ranking sites to inject referring         facement techniques. Below, we first discuss how to collect
+     hyperlinks.                                                    representative defaced and legitimate web pages. We then
+   • Cloaking [43]. To evade detection, cloaking techniques         present our efficient data annotating techniques for training
+     are widely used to serve different content to different        DM O S.
+
+
+
+3706    30th USENIX Security Symposium                                                                                    USENIX Association
+3.1.1    Collecting Defaced Dataset                                                 game                             business
+                                                                                                                                  shopping       travel   entertainment
+                                                                                                                                   3.00%         4.55%        8.07%
+                                                                                    5.76%      sales                  10.63%
+                                                                                               8.92%                                                      sports
+To avoid detection by the authorities, defacers have evolved                                                     technology                               5.30%
+                                                                                                                   8.16%
+their techniques, making it more challenging to collect de-                                                                                                   health
+                                                                                                                                                              6.24%
+faced web pages. We note that defacers’ primary goal is to                             porn
+                                                                                                                   others
+                                                                                                        gamble     7.83%                         government
+                                                                                      28.11%
+make illicit products rank high in relevant search results so                                           57.21%                    life             17.15%
+                                                                                                                                12.16%
+that they can be readily accessible. Based on this observation,                                                                          education
+                                                                                                                                          15.24%
+we leverage the web-crawling capabilities of search engines                                                                   news
+                                                                                                                              1.67%
+and use advanced search engine queries to efficiently retrieve
+the most suspicious web pages. Specifically, we search a list                (a) Defaced Dataset Categories (b) Legitimate Dataset Categories
+of illicit keywords (like "MARK 6", "M4RK SIX") on search
+engines. Since these illicit keywords1 are often meaningless                Figure 3: Topic Distribution in Defaced/Legitimate Web
+and irrelevant to outsiders due to their obfuscation (e.g., homo-           Pages
+phonic/ homomorphic jargons in Section 3.2.2), it is therefore
+reasonable to believe that the pages indexed under jargons                     Upon further examination, we observe that web pages from
+are more likely to be defaced web pages. We then use Sele-                  the same website are more similar to each other. If we di-
+nium [11], a web browser automation tool, to follow the links               rectly feed all the crawled web pages as training data for our
+in the search results and crawl the corresponding web pages.                machine-learning model, it will lead to overfitting, which in
+   Jargon-mining algorithm. The next issue is to collect a                  turn will result in poor identification/ detection performance
+large number of illicit keywords to cover different deface-                 for never-before-seen data. To ensure the diversity within
+ment scenarios. Sole reliance on manual keyword crafting is                 the dataset, we use ssdeep [4], a fuzzy hashing algorithm,
+not viable due to its labor-intensive nature and limited/ un-               to compute the fuzzy hash value. The hash distance is then
+certain coverage. To overcome this challenge, we leverage                   used to measure web pages’ similarity, and only the Top-1000
+the “related search” function offered by all major search en-               dissimilar web pages per website are used for training.
+gines [35, 45] to expand our illicit keyword list based on a
+small set of seed jargons. The procedure is detailed as follows:            3.1.3       Data Annotation
+   • We first manually collect a small list of seed jargons
+      through manual crafting or keyword extraction from il-                The training of DM O S requires labeled data, which is very
+      licit websites (e.g., adult-content website). We also ex-             time consuming and resource-intensive.
+      tract jargons from cybercrime marketplaces (e.g., Silk                   Label defaced dataset. We manually examine and label
+      Road, a breeding ground for illegal drug business [47])               the suspicious pages collected from search engines. If, in the
+   • We input seed jargons as search terms on mainstream                    collected dataset, there is only one suspicious page under a
+      search engines such as Google, Baidu, 360 Search, etc.                domain, we manually examine the page by looking for illicit
+   • By collecting the "related search" keywords, we form a                 keywords and checking their context. If there are multiple
+      candidate list of keywords that are likely to be illicit.             suspicious pages under a domain, we randomly sample 10%
+   • We then manually review the keywords in the candidate                  pages under this domain for manual verification. We observe
+      list to filter out those not related to defacements.                  that defacements are often conducted in batch for all web
+While the above process may still miss some illicit keywords,               pages from a website with similar jargons. Therefore, if all the
+thanks to the built-in generalization power of its Jargon Nor-              sampled web pages are defaced, we assume all the collected
+malization module, DM O S can still achieve high detection                  web pages under the same domain are defaced. Otherwise,
+performance in our large-scale empirical studies. Refer to                  we manually check the remaining suspicious pages under this
+Section 6.1 for more detailed discussions on this issue.                    domain. For defaced web pages, we also label the categories
+                                                                            of the promoted illicit products.
+3.1.2    Collecting Legitimate Dataset                                         Label legitimate dataset. While our legitimate dataset
+                                                                            was crawled from first-tier websites, we were surprised to
+Collecting legitimate data, e.g. legitimate web pages that have             find defacements in some of the web pages. For example, we
+not been compromised/ defaced, is relatively straightforward:               found 163.com, ranked Top-140 worldwide by Alexa, was
+We first crawl those top-ranked websites across multiple cate-              injected with gambling materials in March 2019. To ensure
+gories in the China Webmaster list [8]. Since these websites                the correctness of labels, we need to design a light-weight
+are expected to be less susceptible, we then filter and label               scheme to remove any defaced web pages from the legitimate
+these web pages using a light-weight scheme to be described                 dataset. Specifically, we first develop a list of alarming key-
+in Section 3.1.3.                                                           words, which are broad enough so that any defaced web page
+                                                                            should contain at least one alarming keyword with a very high
+    1 For the ease of presentation, we use the terms illicit keywords and   probability. In other words, it is difficult for defacers to craft
+jargons interchangeably.                                                    a defaced web page without any alarming keywords. Then,
+
+
+
+USENIX Association                                                                                     30th USENIX Security Symposium                              3707
+we use the Aho-Corasick string-searching algorithm [6] to                tag-sentence          non-fluent             seed jargons
+search for alarming keywords among web pages. By admit-                      pairs    Language sentences               Homophonic/
+ting the vast majority (95%) of the legitimate web pages with                              Model                      Homomorphic
+this pre-screening step, we can afford to check the remaining                                                        Jargon Recovery
+ones manually to ensure they have not been compromised.                                                                          jargon
+                                                                                         (title, s1’)
+To generate the list of alarming keywords, we compare the                                                                      candidates
+frequency difference of a keyword in the legitimate dataset                                             recovered
+and defaced dataset, respectively. More details can be found                               (a, s2’)     sentences
+                                                                                                                     Language Model
+in Appendix A.
+                                                                                          (p, sM’)
+
+3.1.4   Details of Our Final Dataset                                         Figure 4: The Procedure for Jargon Normalization
+Based on 439 seed jargons, we collected 216, 708 illicit key-
+words, where keywords related to gambling, adult content
+                                                                     presented in Listing 1, for which the parsed result is [(‘a.title’,
+(porn), and sales comprise the majority of the data. Given
+                                                                     ‘MARK SIX’), (‘a’,‘benign content’)].
+these illicit keywords, we collected 294, 393 suspicious web
+pages from 4, 931 websites in total. After verifying and la-                  Listing 1: An Example of Special HTML Tags
+beling the web pages as discussed in Section 3.1.3, we filter
+                                                                     1   <a href=" http :// benign . web . com "
+out web pages of incorrect labels to yield 147, 754 of defaced
+                                                                     2      title=" MARK SIX " > benign content </a>
+web pages across 2, 103 websites. The dataset covers com-
+mon defacement categories, whose proportion is shown in                For a formal definition, suppose page is a web page, its
+Figure 3a. Note that the category of sales includes different        parsed result is page = [(tag1 , s1 ), (tag2 , s2 ), · · · , (tagM , sM )],
+illicit goods and services such as fake credentials/ certificates,   where M indicates the maximum length of page. Let N be
+counterfeits, surrogacy, and unlicensed drugs, etc.                  the maximum length of a sentence si . When the length of a
+    For the legitimate dataset, we collected 389, 438 web pages      sentence exceeds this parameter N, we split this sentence into
+from 5, 121 websites in total, covering most website cate-           sub-sentences, and add these tag-sub-sentence pairs to page.
+gories (e.g., government, sports, health, etc.). Their statistics
+are depicted in Figure 3b. We randomly split 70% of the legit-
+imate and defaced datasets for training and use the remaining        3.2.2     Jargon Normalization
+30% for offline testing (see Section 4.1).                           Recovering obfuscated jargons is of great importance for
+                                                                     machine-learning models to understand the semantics of the
+3.2     Web Page Preprocessing                                       jargons and thus can precisely recognize defaced web pages.
+                                                                     Since the obfuscated jargons should be easily understood by
+As mentioned earlier, modern defacement campaigns often              human subjects, these jargons often share similar pronun-
+obfuscate jargons (also called "illicit keywords” in this pa-        ciations (i.e., homophonic jargons) or similar shapes (i.e.,
+per) using similar shape or pronunciation to bypass detection.       homomorphic jargons) with their original forms.
+Existing NLP techniques cannot adequately learn or under-               • Homophonic jargon. There is a system called Pinyin
+stand these jargons for two reasons. Firstly, the vocabulary of            to notate the pronunciation of Chinese characters. The
+jargons is constantly evolving and differs significantly from              Pinyin-to-character mapping is a one-to-N mapping.
+the standard vocabulary. Secondly, many illicit keywords are              Therefore, homophonic characters are common and have
+created in ungrammatical and obfuscated forms (e.g., letter                been widely abused by defacers. For example, instead of
+"l" can be replaced by digit "1") while the NLP techniques are             directly using MARK SIX (i.e., 六合彩), defacers may
+geared towards the properly-written text. To leverage the tech-            use MARC SIX (i.e., 六和彩), a transformed jargon with
+nical advances of NLP for detecting defaced web pages, we                  the same Pinyin “LiuHeCai".
+need to recover transformed jargons to their base forms. Be-            • Homomorphic jargon. Some Chinese characters have
+low, we first introduce how to parse HTML and then discuss                 similar shapes. These homomorphic characters are also
+how to identify and recover these jargons.                                 commonly used to obfuscate jargons. For example, de-
+                                                                           facers can use M4RK SIX (i.e., 六台彩), as shown in
+3.2.1   Parsing HTML into Tag-Sentence Pairs                               Figure 1, to replace the blocked keyword of MARK SIX
+                                                                          (i.e., 六合彩) based on their similar appearance.
+Web pages are parsed to extract tag-sentence pairs. In particu-         To identify the obfuscated keywords, we develop the follow-
+lar, there exist special HTML tags which can contain text not        ing jargon normalization procedure, as illustrated in Figure 4:
+only in the body but also in specific attributes, e.g., keywords       1. Language Modeling (LM) is a classical task for assign-
+of meta tag and alt of image tag, etc. One example snippet is              ing probabilities to sentences drawn from a corpus. It
+
+
+
+3708    30th USENIX Security Symposium                                                                                USENIX Association
+      is often used to measure the smoothness/ idiomaticness                         negative checking, we can only afford to sample around 50
+      of sentences. Since sentences with obfuscated jargons                          defaced web pages without detected obfuscated jargon. When
+      should not be smooth, we can use LM to filter out smooth                       checking all text content of these sampled pages, we could not
+      sentences, which should not contain any jargons. For ef-                       find any undetected obfuscated jargon. However, limited by
+      ficiency considerations, we adopt the unigram LM [10]                          the sample size, our estimated recall and false negative rates
+      approach. We then build the model using a corpus con-                          are expected be lower than the actual rates. By identifying
+      sisting of the Chinese wiki [9], the legitimate dataset we                     and recovering obfuscated jargons, DM O S can increase its
+      collected (see Section 3.1.2), and illicit web pages2 , but                    precision from 91.29% to 94.89%, which can reduce manual
+      not the defaced victim pages.                                                  efforts on processing false alarms by over 41%. More details
+  2. We use unigram LM to assign a probability for each                              on the effectiveness of JNA are discussed in Section 4.1.3.
+      sentence. High-probability sentences are believed to be
+      similar to the corpus. In contrast, the minority of low-
+      probability sentences are assumed to be non-fluent and                         3.3     Detection of Web Page Defacements
+      thus can contain obfuscated jargon candidates.                                 Stealthy defacements have been widely used in modern de-
+  3. We identify the homophonic/ homomorphic jargons from                            facement campaigns. On the one hand, injecting tiny illicit
+      these non-fluent sentences and transform them back to                          content can make the defacement unnoticeable for detec-
+      their base forms (i.e., jargon candidates), on which we                        tion. On the other hand, with minor modifications of the
+      expand later.                                                                  site-ranking influential HTML tags (e.g., title, meta, etc.),
+  4. For jargon candidates, we use LM to measure the flu-                            defacers can effectively advertise illicit content via search
+      entness again. Only high-probability sentences are used                        engines, which drive the majority of web traffic today. Below,
+      and recovered, while the others are abandoned since they                       we first discuss the limitation of existing approaches. We then
+      have never been seen in our large corpus.                                      illustrate how to encode the tag information on top of different
+Homophonic Jargon Recovery. To identify and recover ho-
+                                                                                     neural networks to better identify stealthy defacements.
+mophonic jargons from non-fluent sentences, we take the
+following steps:
+   • We collect a list of seed jargons (e.g., MARK SIX). As                          3.3.1   Limitation of Existing Solutions
+      described in Section 3.1.1, this is a relatively straight-
+                                                                                     The following plausible approaches turn out to be ineffective:
+      forward process of extracting keywords from illicit web-
+                                                                                       • Classical text classification. Stealthy defacements only
+      sites, etc.
+                                                                                          introduce small illicit snippets. However, normal content
+   • We use a sliding window to traverse non-fluent sentences
+                                                                                          can be very long and embedded with confusing content.
+      and convert Chinese characters within the window to
+                                                                                          Without context and hierarchy awareness, it is difficult
+      their Pinyin representations.
+                                                                                          for classical text classification models like SVM or XG-
+   • We then calculate the editing distance (e.g., Levenshtein
+                                                                                          Boost to pay attention to suspicious regions to accurately
+      distance [49]) of Pinyin between the characters in the
+                                                                                          capture the defacement.
+     window and seed jargons.
+                                                                                       • Reference (Gold) copy. Modern web pages contain
+   • If the distance is under a threshold, it means the char-
+                                                                                          many dynamically generated or even user-generated
+      acters in the window and the seed jargons are similar.
+                                                                                          content. Tracking changes with respect to a reference
+     Therefore, we replace the characters with the matched
+                                                                                          (“gold”) copy of the web page is not as easy as for static
+      seed jargon. The latter is treated as jargon candidates.
+Homomorphic Jargon Recovery. We need an encoding sys-                                     web pages. To get reasonable results, the service needs
+tem, similar to Pinyin, but can encode Chinese characters                                 to be deployed on customers’ servers. However, such a
+according to their shapes instead of pronunciations. Fortu-                               requirement goes against our goal of providing a cloud-
+nately, we find the Four-Corner System [1] that can suit this                             based service that does not require any software modi-
+requirement. It can be seen as a perceptual hashing algorithm                             fication or installation on customer’s machines, which
+that can embed the shape information of Chinese characters.                               gives lower cost and better usability.
+With this encoding, the distance between homomorphic jar-                              • Checking a few important tags only. Although
+gons should be small.                                                                     stealthy defacements typically occur in a few tags, de-
+   The Jargon Normalization Algorithm (JNA) has achieved                                  facements generally can appear in other tags (Section 5.1
+an outstanding accuracy. We manually check the results of                                 shows 44 different tags). Furthermore, there are intricate
+the offline testing data. JNA identifies 50, 855 obfuscated                               relationships among the tags. Checking separate tags
+jargons, out of which only 5 are false positives. More details                            can result in the loss of essential hints. A straightforward
+are given in Section 5.2. Due to the high cost of manual false                            example is that the context of the text in <title> and
+                                                                                         <meta> should be consistent. Otherwise, it may indicate
+    2 To crawl illicit web pages, we can visit illegal websites directly or follow        defacements. This necessitates considerable efforts to
+the links of defaced pages. They should not contain obfuscated jargons.                   model the properties and relationship of tags.
+
+
+
+USENIX Association                                                                                      30th USENIX Security Symposium          3709
+              (title,c1)
+                                     w1          WE1                           CE1
+
+                                     w2          WE2
+                (a, c2)                                       Low-level        CE2        High-level                     y
+                                     wn          WEn          Attention                   Attention
+                     ...
+                                    title      tagEi
+                                                                                                             WE
+                                                                               CEM
+                (p, cM)
+
+             tag-sentence pair                         tag-sentence embedding                  webpage embedding
+
+                                            Figure 5: Architecture of the THAN Model
+
+3.3.2   Key Insights                                                 3.3.3    Design of Tag-Aware HAN Model
+                                                                     We design the so-called Tag-aware Hierarchical Attention Net-
+It is challenging to pinpoint the stealthy defacement. Enter-
+                                                                     work (THAN for short) by introducing the tag embeddings on
+prise websites are rather diverse. They integrate code and re-
+                                                                     top of the HAN [46] network. Figure 5 depicts the network
+sources from dozens of third-party service providers, ranging
+                                                                     architecture of THAN. Following the design of HAN, THAN
+from personalized ads, marketing tags, CDNs, to third-party
+                                                                     also includes a two-layer attention mechanism (one at the
+JavaScript libraries and many others. Legitimate web pages
+                                                                     word layer and another at the sentence layer), which enables
+can therefore contain seemingly illicit “noises” including le-
+                                                                     the model to adjust the attention paid to individual words and
+gitimate advertisements which promote legitimate products
+                                                                     sentences. However, unlike the sentence embedding scheme
+(e.g., drugs, luxury, red wine, etc.), ambiguous yet legitimate
+                                                                     in HAN, we develop the tag-sentence embedding in the sec-
+website content (e.g., love novels and movies which may have
+                                                                     ond layer instead. This is to better capture the differences in
+on-the-verge description of adult content, etc.), and others. In
+                                                                     tag-preference between stealthy defacements and noises.
+other words, stealthy defacements sometimes do not exhibit
+                                                                        As introduced in Section 3.2.1, let (tagi , si ) be the i-th tag-
+any differences from these noises.
+                                                                     sentence pair of page. We first split si to a word sequence
+   Fortunately, due to their different purposes, the “noisy” but     [w1 , w2 , · · · , wn ]. Using the word2vec model [37, 38], we can
+legitimate content and the illicit/ fraudulent ones (planted by      learn the word embeddings 3 from the Chinese wiki corpus [9]
+defacers) should appear in different regions of a web page.          and the dataset collected in Section 3.1. Each word wt is
+For defacements, illicit snippets are typically injected into        mapped to a D-dimensional embedding vector wet . Since
+those more informative HTML tags so that the promoted                not all words contribute equally to a sentence, we follow
+products can appear not only in popular search results, but          HAN [46], in the first layer, to give more weight to more
+also look innocent from the perspective of legal authorities.        informative words (e.g., jargons). We then aggregate these
+In contrast, the noises of legitimate web pages are carefully        weights to form sentence embeddings SEi as follows:
+designed for better human viewing, for example, 1) legitimate                          uit = tanh(Ww GRU(ht−1 , wet ) + bw )          (1)
+ads often appear in the banner and should not occur in title,
+meta tags; 2) ambiguous website content (e.g., love novels,                                         exp(huit , uw i)
+                                                                                           αit =                                          (2)
+legitimate lottery websites, etc.) often appears in the main                                       ∑t exp(huit , uw i)
+body part. In summary, promotional defacements essentially                                      SEi = ∑ αit hit                           (3)
+show distinctive location and tag preferences, compared to                                               t
+the noisy legitimate content.                                        where Ww , bw , uw are trainable parameters and αit indicates
+   According to this observation, promotional defacement             the attention weight of the t-th word for sentence si .
+identification requires a model to follow the page-ranking              Tag-Sentence Embeddings. To learn the importance of
+algorithms of search engines to focus more on important tags         each tag, we map tagi to a trainable vector tagEi ∈ Rd , i.e.,
+while avoiding the noises induced by normal regions that may         the tag embedding. We then concatenate the tag embedding
+cause the web page to be misclassified. Towards this end,            with the weighted sentence vector to yield the embedding of
+we introduce a tag embedding scheme, which can be used               the tag-sentence pair (tagi , si ) as follows:
+on top of different state-of-the-art neural networks, including
+Hierarchical Attention Network (HAN) [46], BERT [24], and                                    T SEi = [tagEi ; SEi ]                       (4)
+others, to automatically learn the information and importance             3 For Chinese application, we actually learn the embeddings for each
+of HTML tags. As shown in Table 2, such tag information can          character, which can generalize better than word embeddings. For ease of
+significantly improve the performance of these state-of-the-art      presentation, we use word embedding to represent character embedding, if
+networks in detecting defacements.                                   not specified otherwise.
+
+
+
+
+3710    30th USENIX Security Symposium                                                                               USENIX Association
+Compared to sentence embeddings, such tag-sentence embed-                             Table 1: Top-8 Tag Embeddings
+dings (T SEi ) can reflect the differences in tag and location
+                                                                                                      meta.        meta.
+preferences between stealthy defacements and noises which                 Tag        title   meta
+                                                                                                    description   content
+                                                                                                                            marquee    a     span    div
+
+promote similar products. To highlight those more suspicious           L2 Norm of
+                                                                                     0.73    0.58      0.42        0.26      0.24     0.18   0.18   0.16
+                                                                     Tag Embedding
+tag-sentence pairs, we use the second layer attention network
+to automatically assign more weight for the defaced content
+when constructing the web page embedding W Ei . The second          with a large L2 norm can activate a large weight in a neural
+attention layer shares the same structure as the first one. Fi-     network. Therefore, we use the L2 norm to measure the impor-
+nally, we feed the web page embedding to a fully connected          tance of different tags. Table 1 presents top tag embeddings
+network to predict whether a web page has been defaced or           with larger L2 norms of a sample defaced page. We can see
+not.                                                                that tags which are more likely to be defaced have larger L2
+                 y = sigmoid[(W ×W Ei ) + b]               (5)      norms, e.g., title, meta, and so on. Refer to Section 5.1 for
+                                                                    tag preferences of defacers. Observe that, tags that are often
+   Training THAN model. The THAN model is trained by                associated with noise (e.g., ads or ambiguous content) are
+TensorFlow [13]. In our experiments, each web page is split         automatically learned to be trivial. This experiment demon-
+into tag-sentence pairs, out of which we randomly sample 150        strates that THAN, given the tag embedding, can assign a
+tag-sentence pairs as the input of our model. We map words          heavier weight to suspicious tags while avoiding noises.
+to 256 dimension continuous vectors of real numbers. Note              Case study of learned features. To verify the ability of
+that the dimension of the tag embedding cannot be too high.         THAN in steering more attention towards informative tag-
+Otherwise, the neural network will give too much weight to          sentence pairs and words in a web page, we visualize the
+the tag and vice versa. Finally, we set the dimension of the        hierarchical attention layers for one random web page. Note
+tag embedding to 32, at which point we can obtain a stable          that the features are automatically learned, and no domain
+model. We use the Adam optimization algorithm for training,         knowledge is required. As shown in Figure 6, every line is
+with an initial learning rate of 0.001. The dropout rate is set     a tag-sentence pair. The bar represents the weight of the tag-
+to 0.3. The THAN model is trained for 3 epochs and the batch        sentence pair, and the colored words denote they are more
+size is set to 64.                                                  informative in this sentence. To avoid clutter, we only show
+                                                                    the Top-10 most important tag-sentence pairs and only present
+3.3.4   Design of Tag-Aware BERT Model                              important words by normalizing their weights. As expected,
+                                                                    those informative tags (e.g., title, meta and a) dominate the
+To demonstrate the broad applicability of our method, we
+                                                                    list. Upon closer examination, it is revealed that illicit key-
+integrate our proposed tag embedding to the state-of-the-art
+                                                                    words contribute more weights for sentence embeddings. This
+NLP model, namely, Bidirectional Encoder Representations
+                                                                    experiment also demonstrates the effectiveness of the THAN
+from Transformers (BERT) to obtain Tag-aware BERT (T-
+                                                                    model.
+BERT for short). BERT is based on a multi-layer bidirectional
+Transformer [41] structure and is the first fine-tuning based
+representation model that achieves state-of-the-art results for     4     Evaluation of DM O S
+a wide range of NLP tasks. We use the open-source implemen-
+tation of BERT [19] to conduct experiments. Unlike HAN              We have implemented DM O S in Python using 12, 500 lines
+and THAN, in addition to the token embedding of each word,          of code. Unlike other Proof-of-Concept research, DM O S is
+BERT also utilizes segment embedding and position embed-            a full-featured tool and has been deployed as a commercial
+ding to enrich the information of the sentence representation.      service in the real world. To determine the effectiveness of
+These three kinds of embedding are aggregated to obtain the         DM O S, we evaluate it based on large-scale fresh data in the
+sentence representation (i.e., SEi ). Following the practice in     wild. In this section, we analyze the performance of DM O S
+THAN, the tag embedding is concatenated with the sentence           on different datasets and compare it against classical machine-
+vector to obtain the embedding of the tag-sentence pair. Then       learning models as well as commercial products by other
+an attention layer is applied to obtain the representation of the   leading companies.
+entire web page. The hyperparameters and experiment setting
+of training T-BERT are consistent with those of THAN.               4.1     Offline Experiments
+                                                                    For the dataset collected in Section 3.1, we randomly split
+3.3.5   Demystifying the Tag Embeddings
+                                                                    70% of websites for training and use the remaining 30% for
+We use THAN as an example to visualize how and why tag              offline testing. Instead of sampling web pages, we split by
+embeddings can improve detection performance. Firstly, we           websites since web pages of different websites are more di-
+would like to identify which tags are believed to be more           verse. This is to stress test the generalization power of DM O S.
+important by the tag embeddings. Generally, an embedding            For this reason, the number of web pages for offline testing
+
+
+
+USENIX Association                                                                           30th USENIX Security Symposium                         3711
+    title 官方金沙娱乐赌场网站 无往不胜                                          Table 2: Classification Performance in Offline Experiments
+     meta.keywords 游戏赛车，北京    赛车
+
+                a 官方金沙娱乐赌场网站
+                                                                              Methods              Precision     Recall     F1
+                                      0.14
+        meta.description 澳门新葡京赌场
+                                                                                WAF                 93.32%       9.76%    17.67%
+                                      0.12
+                                                                          Saxe et al. [39]          82.53%      85.62%    84.05%
+                                      0.10
+                    官方金沙娱乐赌场
+                                      0.08
+                                                                                BoW                 86.56%      91.87%    89.14%
+meta.content, 玩家认可，官方金沙娱乐赌场                                                  HAN [46]               86.95%      93.86%    90.28%
+                                      0.06
+
+   a 舌尖大厨还原了第一的湖州粽 美好心选               0.04   No keywords                   FastText [31]            81.47%      88.21%    84.71%
+               img 长按识别二维码加关注
+                                      0.02                                  BERT [24]               93.41%      97.64%    95.48%
+                       a    年六月              No keywords                       THAN                 91.29%      96.89%    94.00%
+                 a 画腿赶超郑爽上热搜
+                                                                              T-BERT                95.66%      98.76%    97.19%
+                                                                     DM O S (JNA + THAN)            94.89%      97.40%    96.13%
+                                Attention weight
+                                                                    DM O S_ V 2 (JNA + T-BERT)     97.53%       99.37%    98.44%
+Figure 6: Features Learned by THAN. On the left are tags and
+the corresponding sentences in Chinese. On the right are the
+                                                                   4.1.2   Effect of Tag Information
+English translation of the keywords highlighted in the same
+color.                                                             To evaluate the effectiveness of the HTML tag information,
+                                                                   we first compare THAN with HAN. The former introduces
+is not exactly 30% of the dataset. The offline testing dataset     the information of HTML tags and automatically learns the
+consists of 20, 958 defaced pages and 40, 426 legitimate ones.     weight of different tags. Table 2 shows that the use of tag-
+                                                                   derived information by THAN results in a considerable im-
+                                                                   provement of 4.34% in precision and 3.03% in recall over
+4.1.1    Comparison with Other Detection Schemes                   HAN. Similarly, T-BERT can further improve the already-
+                                                                   high performance of BERT to 95.66% (precision) and 98.76%
+As our baselines, we select the following state-of-the-art solu-   (recall). Unfortunately, it is impractical to apply BERT and its
+tions in the area of malicious web content detection:              variations (i.e., DM O S_ V 2), or even its lightweight version
+   • WAF: Most WAF vendors utilize a keyword-searching             (e.g., ALBERT [32]) in practice. This is due to the huge num-
+     approach to detect defacements. We acquired one of such       ber of model parameters (108 million parameters in TBERT
+     WAF devices from a major Chinese vendor and directly          compare to 1.6 million in THAN) and slow inference speed.
+     used it for testing without further training.                 In our experiments with hardware specified in Section 4.2.2,
+   • Saxe et al. [39]: This work divides the documents into        THAN takes 0.28s while TBERT takes 9.87s to process each
+     multiple sub-regions and then utilizes a deep learning        web page on average. As a result, we deploy DM O S (with
+     approach to aggregate these sub-regions for representing      JNA + THAN) for the online experiments. Note that DM O S
+     and classifying web pages. Based on the feature extrac-       already outperforms all the state-of-the-art solutions, includ-
+     tion function partially described in the paper, we try our    ing BERT. For the remainder of the paper, DM O S means
+     best to re-implement its detection scheme.                    DM O S (with JNA + THAN), unless specified otherwise.
+   • BoW model: The bag-of-words model is well known.
+     We first extract the most important words based on TF-        4.1.3   Effect of Jargon Normalization
+     IDF [14] and then use the popular XGBoost model [22]
+     to fit the training data.                                     To demonstrate the effectiveness of the proposed jargon nor-
+   • HAN [46]: HAN is designed for structure-free document         malization algorithm, we compare THAN and BERT to their
+     classification. Here, we reproduce the network to classify    DM O S counterparts, which normalize jargons before apply-
+     the defaced web pages.                                        ing the THAN/ BERT model for classification. By identify-
+   • FastText [31]: FastText is a simple and efficient neural      ing and learning the semantics of jargons, both DM O S and
+     network text classification model. We use its open-source     DM O S_ V 2 achieve better performance, as shown in Table 2:
+     library in our evaluation.                                    With JNA, the precision of THAN increases from 91.29% to
+   • BERT [24]: BERT is a multi-layer bidirectional Trans-         94.89%, which can reduce manual efforts for verifying false
+     former [41]. It is the first fine-tuning based represen-      alarms by over 41%. Similarly, JNA can improve the preci-
+     tation model that achieves state-of-the-art results for a     sion of T-BERT from 95.66% to 97.53%, thus cutting false
+     wide range of NLP tasks. The training process is dis-         positives by over 43%.
+     cussed in Section 3.3.4.
+For fair comparisons, all the baseline models (except the black-   4.2     Online Experiments
+box WAF) are trained with the same training dataset, and we
+then fine-tune them for the best performance. As shown in          In this subsection, we introduce the business model of the
+Table 2, DM O S shows superior performance across the board.       DM O S service and then analyze its performance based on a
+
+
+
+3712     30th USENIX Security Symposium                                                                        USENIX Association
+                                                     Table 3: Online Testing Results for Five Months
+
+ No. of Total     No. of Legitimate           No. of Defaced                   True      False       False
+                                                                  Schemes                                         Precision     Recall     F1
+ Pages (Sites)      Pages (Sites)              Pages (Sites)                 Positive   Positive    Negative
+  38,526,989                                                        WAF       19,958      1634      511,342       92.43%        3.76%     7.23%
+                  37,994,394 (6474)            532,595 (824)
+    (7298)                                                         DM O S    532,021     65485        574         89.04%       99.89%    94.15%
+ * Web pages reported in this table have been de-duplicated by MD5 hash values. Websites have been de-duplicated by top-level domains.
+ * WAF failed in handling 1,239,717 pages due to various exceptions, which are not counted when evaluating its performance.
+
+
+
+                                        Web Page
+                                                                               Any web page acquisition channel (e.g., search engines, or
+                                      Pre-processing
+                                                                               firewalls, etc.) can be readily fed into DM O S.
+                                    HTML         Jargon
+                                    Parser    Normalization
+
+                                                                               Scheduler. The sheer volume of web pages makes real-time
+                                       Defacement
+                                        Detection
+                                                                               detection challenging. We need a reliable, high-throughput,
+                                             THAN
+                                                                               low-latency platform for handling such data feeds. We use
+ Website             Job                                       Manual          Kafka to receive pages from crawlers and distribute them to
+ Crawlers         Schedulers                 DMoS              Review
+                                                                               the available DM O S instance for detection.
+            Figure 7: Online Deployment of DM O S.                             Defacements Detection. We run 50 instances of DM O S on a
+                                                                               CentOS 7 machine with a 16-core CPU and 100GB memory.
+five-month long online experiment.                                             Each instance consumes 1.2G memory. The classification
+                                                                               of each web page, on average, can be completed within 0.3
+4.2.1   Usage of DM O S                                                        second. Such runtime efficiency enables DM O S to crawl and
+                                                                               analyze millions of web pages for thousands of websites every
+It is straightforward for site owners/ administrators to use                   day.
+DM O S. Specifically, they just need to submit a URL to reg-
+ister the defacement monitoring service for their website.
+DM O S then crawls the website from this URL regularly,                        4.2.3    Detection Accuracy
+as described in Section 4.2.2. They also need to provide con-
+tact information for defacement notification. Depending on                     We collect performance statistics of DM O S for five months.
+the confidence in the notification, site owners can manually                   As presented in Table 3, DM O S has classified 38, 526, 989
+investigate or directly remove the illicit content.                            web pages (after deduplication) across 7, 298 websites in to-
+                                                                               tal. It has discovered 532, 021 defaced web pages among
+                                                                               824 websites. Except for precision, DM O S outperforms the
+4.2.2   Deploying DM O S as a Cloud-Based Service
+                                                                               widely-used WAF device in all other metrics, especially the
+Figure 7 illustrates how DM O S is deployed as a commer-                       overall metric of F1. Note that we can only afford to compare
+cial cloud-based service. Firstly, the provider utilizes website               with WAF since it utilizes simple string search algorithms
+crawlers to acquire web pages covered by the service. It then                  and thus is efficient enough to handle our large volume on-
+uses Kafka [16], a distributed event streaming, to distribute                  line dataset in real-time. Although the precision of DM O S
+the collected web pages to available DM O S instances. Fi-                     is slightly lower, we notice that more than 90% of false posi-
+nally, the defaced pages identified by DM O S are examined                     tives occur in 67 websites only. Furthermore, these websites
+manually by the provider who would notify the site owners                      typically share similar error-prone sentences. For practical de-
+with true positives.                                                           ployment, we can develop a whitelist based on such sentences.
+                                                                               More specifically, for any defaced pages identified by DM O S,
+Website crawlers. We run website crawlers on 42 machines,                      we can compute the string similarity of the believed-to-be
+each with an 8-core CPU, 16GB Memory, and a 400 Mbps net-                      illicit sentences with the whitelist of this website. If they are
+work connection. A machine is configured to run 7 instances                    similar, we treat such defaced pages as false positives and
+of crawlers in parallel. Knowing a defaced website may, by                     will not manually examine them. In this way, we can afford
+design, serve different pages to visitors originated from dif-                 to perform manual-review for pages reported online.
+ferent geographical regions, we leverage a nation-wide cloud
+infrastructure to deploy crawlers in parallel across different                 Manual verification. Given the large volume of web pages, it
+provinces to eliminate the impact of page-fetch location. A                    is very resource-consuming to obtain the ground truth for our
+crawler also mimics various search-engine bots and normal                      online experiment. We run the online experiment with DM O S
+browsers by switching its User-Agent field in the request to                   and a WAF device simultaneously and manually check every
+ensure it can receive the defaced content. Note that we do                     page reported by either of the systems. Hence, we have accu-
+not limit DM O S to get web pages only via website crawlers.                   rate true/false positives for both. To estimate false negatives,
+
+
+
+USENIX Association                                                                                  30th USENIX Security Symposium          3713
+                                                                           respectively. These results are consistent with the distribution
+                                                                           within the defaced dataset depicted in Figure 3a.
+
+                                                                           4.2.5   A Longitudinal Study
+                                                                           As the data pattern evolves, a model can become obsolete over
+                                                                           time. This is referred to as concept drift in the field of ma-
+                                                                           chine learning. Under an adversarial setting, such as website
+                                                                           defacements, concept drift can be introduced intentionally by
+                                                                           the attacker to impede the detection performance of DM O S.
+Figure 8: Topic Distribution of Defaced Sites in Online Tests              To measure the impact of concept drift, we perform a five-
+                                                                           month long longitudinal study using our online dataset. The
+                                                                           result is shown in Figure 9. It turns out DM O S performs
+we manually check every page exclusively reported by the
+                                                                           stable over time, which proves its generality: The recall is
+WAF. This gives us FNDMoS , i.e., the number of pages missed
+                                                                           always above 99% every month. The precision also stabilizes
+by DM O S but captured by the WAF. For pages reported nei-
+                                                                           around 88% after a slight decrease at first. Under such grad-
+ther by DM O S nor the WAF, we use alarming keywords (de-
+                                                                           ual and relatively minor drift, it is possible to maintain (or
+scribed in Appendix A) to filter out about 95% of innocent
+                                                                           even enhance) the performance of DM O S at its high level by
+pages. We then perform a sampled manual checking 4 for
+                                                                           periodical fine-tune its neural network parameters using new
+the remaining suspicious pages. This gives us an estimated
+                                                                           data.
+FNboth , i.e., the number of defaced pages missed by both of
+the systems. With T P being the true positives for DM O S, the
+total false negatives and recall can be determined by:
+                                                            TP
+FNDMoS = FNDMoS + FNboth , RecallDMoS =
+                                                       T P + FNDMoS
+A similar procedure is applied to compute FNWAF and
+RecallWAF .
+  This manual verification process was continuously con-
+ducted by specialized data annotators of our collaborating in-
+dustrial partner on a daily basis during our five-month online               Figure 9: Variation of Performance of DM O S over Time
+experiment. Nevertheless, it is still possible to omit defaced
+web pages. As such, the actual recall of DM O S can be lower.
+
+4.2.4   Statistics of Defaced Websites                                     4.3     Comparison with Online URL Checkers
+Figure 8 presents the categorical distribution of the victim               We also compare the performance of DM O S with popular
+websites with defacements detected. The wide-ranging cate-                 online URL safety-checking tools from major commercial
+gories of defaced websites detected by DM O S demonstrate                  vendors including Baidu [7], Tencent [12] and VirusTotal [5].
+its ability to generalize beyond the training dataset. In particu-         Due to the API query limits of these commercial tools, we
+lar, the categories of government, news media, education, and              can only use them to check hundreds of URLs. For fair com-
+medical institutions occupy the majority of defacement targets.            parisons, we select different categories of URLs in similar
+A significant portion of defaced websites are quite popular:               proportions within our dataset. Given the fast-changing na-
+Amongst 824 websites where defacements are detected, 2                     ture of defaced web pages5 , we complete our experiments
+websites belong to the Top 5 list of the overall category ; 22             within two days to guarantee consistency. Table 4 shows that
+websites rank within the Top 50, and 105 rank within 2000 in               DM O S significantly outperforms the other tools according
+their own categories.                                                      to various metrics. We also observe that these commercial
+   We also categorize defaced web pages by the type of illicit             products incorrectly assume websites with ICP (Internet Con-
+goods and services they promoted. Gambling and porn are                    tent Provider) license to be always secure, regardless of their
+found to be the most popular topics in defacement campaigns,               content, which results in their high false negative rate.
+accounting for 61% and 27% of the promoted targets, respec-
+tively. The game and sales categories account for 9% and 3%
+    4 We uniformly sample 10 pages from each website every day. If any
+
+page is defaced, we manually check all pages of the website with similar
+alarming keywords.                                                            5 Site owners will remove the illicit content immediately after detection.
+
+
+
+
+3714    30th USENIX Security Symposium                                                                                       USENIX Association
+   Table 4: Comparison with other Online URL Checkers                               Table 5: Detection Performance for English Dataset
+                                                                                                                         cra f tS                cra f tL
+  Schemes
+                   No. of           No. of
+                                                 Precision   Recall     F1                        Dreal
+                                                                                                    d   dataset         Dd     dataset          Dd     dataset
+              Legitimate Pages   Defaced Pages                                   Methods
+                                                                                              Precision     Recall   Precision    Recall     Precision    Recall
+  Tencent           235               190        50.00%       6.73%   11.86%      HAN          90.39%      91.21%     86.43%     90.12%       93.54%     95.86%
+ VirusTotal         235               190        57.14%      15.38%   24.24%      BERT         91.51%      94.55%     88.23%     93.72%       95.81%     96.43%
+   Baidu            235               190        63.41%      50.49%   56.22%      DM O S
+  DM O S            235               190        98.37%      97.32%   97.85%                  92.54%      92.46%     90.65%         91.63%   94.72%         95.98%
+                                                                                 (THAN)
+                                                                                DM O S_ V 2
+                                                                                              94.10%      95.35%     92.11%         95.42%   96.33%         97.12%
+                                                                                (T-BERT)
+
+4.4     Adapt DM O S for Other Languages
+Since our collaborating industrial partner’s main market is in                 websites. In total, we collect 31, 946 web pages, which we
+China, we have focused on detecting defacements in Chinese                     refer to as Dl . We use 80% of the defacement dataset (i.e.,
+                                                                                        cra f tS     cra f tL
+web pages so far. Note however that, our approach is general                   Dreal
+                                                                                 d , Dd          or Dd        ) and Dl for training. We then use the
+in nature and can be applied to other languages with the                       remaining 20% of defacement dataset and Dl for testing.
+following steps:                                                                  To facilitate further research and reproducibility, we have
+   • Apply similar approaches to collect datasets for training.                released a subset of the English defacement dataset at [17],
+   • Replace the jargon normalization algorithm with                           which includes 500 real defaced web pages, over 25,000
+     language-specific de-obfuscation techniques if any.                       crafted web pages with defacements, and over 1,400 illicit key-
+   • Take the language-specific word embeddings as the input                   words. Interestingly, during collection of real defaced pages,
+     and train the THAN model as usual.                                        we identified defacements in some well-known institutional
+In what follows, we demonstrate how DM O S can be adapted                      domains including nyu.edu, mit.edu and cuhk.edu.hk. We in-
+to detect defacements of English web pages.                                    cluded all of them in our real testing set, and the detection
+                                                                               accuracy is reported in the first column in Table 5. Their snap-
+4.4.1    Collecting the English Dataset                                        shots are also available in our released dataset. Most of the
+                                                                               defacements in the affected websites had been removed by
+As a proof of concept, we focus on the category of porn-                       their administrators over the course of our experiments.
+related defacements without considering other types. Fol-
+lowing the same data acquisition approach described in Sec-
+                                                                               4.4.2    Detecting Defaced English Web Pages
+tion 3.1.1, we first collect a list of adult-content websites.
+We then crawl their web pages and extract illicit keywords                     The training procedure is similar except for the following
+from the titles. This is based on the observation that titles                  differences:
+of adult-content pages typically contain a large portion of                       • We do not notice the usage of obfuscated jargons in En-
+illicit keywords. By manually examining these candidates, we                        glish defacements. If any, interested readers can directly
+finally collect 10, 656 English illicit keywords related to adult                   apply the language-specific jargon normalization algo-
+content.                                                                            rithms. Therefore, we only make Lemmatization with
+    To collect defaced pages, we develop two approaches as                          NTLK to map words with similar meaning into one word
+follows:                                                                            (e.g., better → good, doing → do).
+    • As discussed in Section 3.1.1, we query search engines                      • Similar to the Chinese scenario, we then train the HTML
+       with illicit keywords and crawl returned web pages. After                    classification model (DM O S/DM O S_ V 2). Here we use
+       manual checking of crawled pages, we collect 5, 928 de-                      word2vec as the initial embedding.
+       faced pages among 22 websites. We refer to this dataset                    The experiment results for the three datasets are shown
+       as Dreal
+            d .                                                                in Table 5. It shows our proposed tag-aware method can im-
+    • We carefully craft a list of defaced pages by following                  prove the performance of HAN and BERT under the English
+       defacers’ procedures. Specifically, we notice that defac-               scenario as well. This demonstrates the applicability of our
+       ers typically utilize off-the-shelf tools [18] to generate              approach to other languages.
+       defaced pages based on a list of illicit keywords. Lever-                  A closer examination reveals that our approach brings
+       aging these tools, we generate two datasets with different              more improvements for the detection of stealthy defacements.
+       amounts of defacements. Each dataset includes 12, 817                   Specifically, the improvement over HAN is: 4.22% (stealthy
+       defaced pages. The first one is the stealthy defacement                 defacements) vs 1.18% (large defacements) in precision, and
+                    cra f tS
+       dataset (Dd           ), where each page contains 3 to 7 illicit        1.51% (stealthy defacements) vs 0.12% (large defacements)
+       keywords. The second one has more defacements with                      in recall. The improvement over BERT is: 3.88% (stealthy
+       more than 20 illicit keywords in each page, which we                    defacements) vs 0.52% (large defacements) in precision, and
+                       cra f tL                                                1.70% (stealthy defacements) vs 0.69% (large defacements)
+       refer to as Dd           .
+    The legitimate web pages are collected from top interna-                   in recall. These results are consistent with our previous find-
+tional websites including education, news and government                       ings on Chinese defacement detection.
+
+
+
+USENIX Association                                                                                     30th USENIX Security Symposium                        3715
+Figure 10: Relative Frequency of Infected HTML Tags. Du-
+plicated tags in one web page are not counted to avoid bias.                  Figure 11: Distribution of Jargon Occurrences
+
+                                                                      these jargons and do not find false positives. For the 40,426
+5     New Discoveries and Measurements                                legitimate pages, JNA recognizes 7 obfuscated jargons across
+                                                                      4 pages. Particularly, 2 jargons are, in fact, typos within orig-
+Based on the detection results of DM O S on Chinese dataset,          inal content. The other 5 jargons are false positives of JNA.
+we have performed a measurement study to better understand            Notice that, even in the cases where JNA has made a mistake,
+the preferences of website defacement techniques. This study          the corresponding pages can still be correctly classified by
+has led to a set of surprising findings and new insights.             DM O S.
+                                                                         Figure 11 shows the distribution of the number of jargons
+                                                                      found in defaced pages. Although most defaced pages contain
+5.1    Prevalence of Stealthy Defacements                             fewer than 50 obfuscated jargons, some pages surprisingly
+Our study confirms that most defacers tend to keep the de-            include hundreds of them. Table 6 lists an example keyword
+facements to a minimum. By counting the injected/altered              of MARK SIX (i.e., “六合彩”) as well as the frequency of
+tags in each defaced web page, we find that 26% of defaced            its Top-8 transformed jargons. The Equivalence in English
+web pages are injected with only one tag. 70% of defaced              column explains the Chinese jargon obfuscation through sim-
+web pages contain fewer than 10 injected tags. Only 5% of             ilar representations in English6 . Usually, the initial keyword
+web pages contain more than 50 injected tags. This can ex-            is widely used by defacers, and the ones that evolved from it
+plain why THAN outperforms the standard HAN model: it                 also receive attention, albeit less than the initial one. Given
+focuses more on the suspicious tags while avoiding the noise          the large volume of obfuscated jargons, we need to revert the
+introduced by the majority of normal regions.                         jargons to their base forms so that THAN can understand
+   Analyzing the frequency distribution of HTML tags in de-           their semantics to enhance the correct classification of de-
+faced web pages, we find that while 44 different tags are used        faced pages. As shown in Table 2, the jargon normalization
+to inject illicit promotional text, marquee, a, title, meta are the   algorithm improves DM O S by 3.60% in precision and 0.51%
+most preferred tags. Together, they comprise 67% of the data.         in recall.
+Figure 10 reports the corresponding statistics. The marquee
+tag is widely used because it is convenient to visually hide          5.3     Differences in Search Engines
+its content with the scrollamount and scrolldelay properties.
+While some other styling techniques are also used for cloak-          Search engines have different policies regarding black hat
+ing, e.g., tiny font or white color, they have been known to          SEO. Leveraging this observation, defacers sometimes per-
+and detected by most search engines for a long time [35]. The         form website defacements targeting some specific search
+prevalence of the a tag is simply because hackers need to put         engines. As observed, a significant portion of defaced web
+links to lead users or search engine crawlers to their promoted       pages that DM O S detected applies the cloaking techniques,
+websites. Lastly, title and meta tags are preferred as they have      by checking the User-Agent and Referer header, to return
+higher priority when search engines index the web page.               illicit content to certain search engine bots only. More illicit
+                                                                      content appearing in search results indicates weaker black hat
+                                                                      SEO tackling of the corresponding search engine.
+5.2    Jargon Normalization Results                                       To improve user experience, most modern search engines
+                                                                      display warnings next to defaced or malicious websites in
+Our proposed Jargon Normalization Algorithm (JNA) has                 their search results so that users will not visit these poten-
+achieved a high precision. To compute the precision, we man-          tially dangerous websites. Figure 12 illustrates one example
+ually review the jargons identified by JNA in the offline test-
+ing dataset. JNA identifies 50,848 obfuscated jargons among               6 These English equivalent jargons are for illustration purpose only. They
+
+3,147 pages out of 20,958 defaced pages. We manually check            have not been used by defacers in practice.
+
+
+
+
+3716    30th USENIX Security Symposium                                                                                   USENIX Association
+Table 6: Top 8 Transformed Jargons Related to “MARK SIX”
+
+ No.    Keywords      Equivalence in English     Frequency
+  1      六合彩               MARK SIX               620356
+  2      六和彩               MARC SIX               145759
+  3       6和彩               MARK 6                 48991
+  4      六合采              MARK SYX                 26509
+  5      六合财              MARK SIKS                 4852
+  6      六台彩               M4RK SIX                 3378
+  7      liuhecai             N.A.                  3357
+  8      六盒彩              MARCK SIX                 3181
+
+
+Table 7: Search Result Warnings and Defaced Pages Statistics     Figure 13: Depth of Defaced Pages from Site Landing Page
+
+  Search Engines     Defaced Pages     With Warning Tips
+    baidu.com            4451               29.8%                5.4    Hijacking of Expired DNS Domains
+   m.baidu.com            231               31.1%
+      so.com            10300               11.3%
+                                                                 We have observed a recent trend of attackers abusing expired
+     m.so.com            8770                7.7%
+                                                                 DNS domains during our manual post-detection analysis, es-
+    sogou.com            5499               17.9%
+                                                                 pecially for those domains previously held by government
+   m.sogou.com           3430               21.4%
+                                                                 agencies. It is easy to understand the attackers’ motivation:
+                                                                 these privileged domains usually rank high in search engines.
+                                                                 After the domain expired, its ranking retains for some pe-
+of such warning tips. The higher percentage of warnings in-      riod before search engines adjust it. Furthermore, it is easier
+dicates that the search engine has more powerful mitigation      for defacers to take over the expired domains (e.g., by direct
+against black hat SEO. During defaced dataset collection for     purchase or exploiting vulnerabilities in outdated, no-longer-
+offline testing (Section 3.1.1), one batch of data (22,939 web   maintained websites). Attackers can thus promote their illicit
+pages over 2,563 domains) is collected simultaneously from       content more effectively. An interesting note: at the beginning
+three major Chinese search engines: Baidu (baidu.com), 360       of 2019, we observed a burst of abuse on expired domains
+Search (so.com), and Sogou (sogou.com), together with their      initially owned by the Chinese government. Upon further
+mobile versions (m.baidu.com, m.so.com, and m.sogou.com).        investigations, we learned that the Central Office of China
+By comparing the proportion of defaced web pages and the         had issued a document requiring government organizations
+number of search engine warnings, we can deduce which            to start using the .gov.cn domain in September 2018 [3]. As
+search engine is preferred by defacers and has less effective    a result, many government websites that were not under the
+black hat SEO mitigation techniques. Table 7 presents our        .gov.cn domain had to migrate to the new domains and thus
+findings. It shows that 360 Search is a preferred target for     released the control of their previous domains.
+defacers, as it has a significantly higher portion of defaced
+pages with the least warnings. Meanwhile, given a large num-
+ber of defaced pages from mobile search results (especially
+for 360 Search and Sogou), it seems the mobile versions of       5.5    Path Depth of Defaced Web Pages
+search engines have already attracted defacers’ attention for
+exploitation.
+                                                                 We are interested in whether the web pages within a shallower
+                                                                 depth of a site are more likely to be defaced. Here, the depth
+                                                                 means the number of hops from the landing page to the de-
+                                                                 faced page, and zero-depth means the landing page itself. To
+                                                                 this end, we examine the defaced web pages discovered by
+                                                                 DM O S. Although we limit the depth of our crawler to be 12,
+                                                                 as presented in Figure 13, most defacements occur within 4
+                                                                 hops from the landing page, and the overall percentage for
+                                                                 page-depth greater than 8 is negligible. Knowing the depth
+                                                                 distribution of the defaced pages, we can reduce the depth of
+  Figure 12: A Warning Generated by the Search Engine.           our crawler without sacrificing the recall of DM O S.
+
+
+
+USENIX Association                                                                 30th USENIX Security Symposium         3717
+6     Discussions                                                   7     Related Work
+
+Our research shows that DM O S offers a highly effective solu-      In this section, we review existing efforts in website deface-
+tion to the threat of promotional defacement. In this section,      ment detection from three perspectives.
+we discuss its limitations and future research directions.
+                                                                    7.1    Defacement Detection
+                                                                    Davanzo et al. [25] treat web defacement detection as an
+6.1    Robustness under Incomplete Keyword                          anomaly detection problem of web pages. However, the eval-
+                                                                    uation is based on only 620 hand-picked web pages, which
+       List
+                                                                    undermines its general applicability. Delta [20] designs a
+It is difficult, if not impossible, to collect a complete list of   framework to detect whether a website change is malicious or
+illicit keywords. Fortunately, our approach has performed           benign based on clustering. By approaching the problem visu-
+effectively even under an incomplete illicit keyword list due       ally, Meerkat [21] renders web pages using headless browsers
+to the following reasons:                                           and applies computer vision techniques to identify the mali-
+    • Promotional defacements mainly aim at SEO. By lever-          cious content changes among screenshots of the website. How-
+      aging the “related keyword” support by search engines,        ever, these works are more suitable for detecting politically-
+      our method can already harvest the majority of illicit        motivated defacements, where websites’ visual appearance
+      keywords used by defacements.                                 is deliberately changed. They are unlikely to achieve similar
+    • Although the set of jargons is extensive, their original      performance for stealthy promotional defacements.
+      forms are limited. For example, all the obfuscated jar-          The most related work of DM O S should be [39], which
+      gons listed in Table 6 are evolved from a single initial      utilizes the hashing trick to create a hierarchical representa-
+      jargon, i.e., Mark Six. Given the Jargon Normalization        tion of web documents (e.g., HTML, JavaScript, CSS, etc.)
+      algorithm, we can map unknown obfuscated jargons to           and then feed such input to neural networks for general web
+      the limited set of original jargons.                          documents classification. However, this work does not utilize
+    • As shown in Section 5.1, adversaries can deface multi-        the information carried by HTML tags and thus cannot dis-
+      ple HTML tags in one page. Therefore, we may miss             tinguish stealthy defacements from legitimate noises in many
+      multiple keywords/tags, but can still have a good chance      cases. Furthermore, [39] uses the web content reported to
+      to catch others.                                              VirusTotal [5], a platform aggregating many anti-virus prod-
+    • THAN takes word embeddings as the input. Words can            ucts, to train the network. As discussed in Section 4.3, most
+      have similar embeddings if they appear in similar con-        vendors in VirusTotal fail to detect promotional defacements,
+      texts in the corpus. As such, DM O S has generalization       which affects the performance of the trained model.
+      power and can understand never-before-seen jargons to
+      a certain extent since jargons often appear in similar        7.2    Black Hat SEO Investigation
+      contexts.
+                                                                    Black hat SEO has become the most popular channel for ad-
+                                                                    vertising illicit goods and services. Wang et al. [44] show
+                                                                    that at least 0.48% of Google autocomplete results are pol-
+6.2    Robustness          against       Other       Evasion        luted. Nektarios et al. [34] construct a representative list of
+       Schemes                                                      218 drug-related keywords for Google search and automati-
+                                                                    cally gather 40, 000 malicious search results to quantify the
+Defacers can adjust their strategy to keep defacements hidden       prevalence of search-redirection attacks, especially for unli-
+from DM O S. They can hide the illicit content by embedding         censed pharmacies. Following a similar approach, Nektarios
+it within images. Worse still, these images can be obfuscated       et al. [33] further perform a four-year long longitudinal in-
+by introducing distortions and noises [48]. However, such           vestigation to reveal the evolution of the attacking strategies
+evasion techniques cannot make illicit content appear in the        and technologies. Advanced offensive techniques, like using
+search results and limit their impact. An adversary may use         jargons, turn out to be effective and, as reported by [42], can
+other evasion tricks by targeting specific search engines only.     often evade detection to bypass blockade by search engines.
+For example, defacers may leverage JavaScript to hide illicit       Towards this end, Liao et al. [35] develop a semantics-based
+content from search engines except for Google, since the            approach to facilitate search engines to detect those compro-
+latter can somehow index JavaScript framework [2]. However,         mised sites by identifying the semantic gaps between the
+DM O S does not limit itself to get web pages from crawlers         malicious keywords and the infected sponsored Top-Level
+only. Instead, it can be used together with other web page          Domains (sTLD). In contrast, DM O S supports the detection
+acquisition channels (e.g., firewalls), making such evasion         of promotional defacements in any domain without limiting
+tricks less effective.                                              to specific sTLD.
+
+
+
+3718    30th USENIX Security Symposium                                                                       USENIX Association
+7.3    Natural Language Processing                                 References
+Besides defacement detection literature, researchers have           [1] Four-corner system, 1995.
+made substantial progress in the area of natural-language-          [2] Can google properly crawl and index javascript frameworks? a
+                                                                        javascript seo experiment. online, 2017. https://www.onely.com/
+processing-based text classification, e.g., BERT [24], Fast-
+                                                                        blog/javascript-seo-experiment/.
+Text [31], etc. Our scheme differs from typical document
+                                                                    [3] Central office notice: Government websites domain policy. on-
+classification work, e.g. sentiment analysis, in that we seek to        line, 2018. http://www.gov.cn/zhengce/content/2018-09/06/
+detect an active adversary who tries hard to evade detection            content_5319675.htm.
+and is willing to obscure the semantics of their text. While        [4] ssdeep project. online, 2018. https://ssdeep-project.github.io/
+inspired by Hierarchical Attention Network [46], we have de-            ssdeep/index.html.
+veloped new techniques to encode the HTML tag information           [5] Virustotal. online, 2018. https://www.virustotal.com.
+into the neural network and examine content at hierarchical         [6] Aho–corasick algorithm. online, 2019. https://en.wikipedia.org/
+spatial scales. As a result, we can capture locality and thus           wiki/Aho%E2%80%93Corasick_algorithm.
+achieve higher accuracy compared to the direct application of       [7] Baidu url security center. online, 2019. https://bsb.baidu.com.
+state-of-the-art NLP models.
+                                                                    [8] China webmaster. online, 2019. http://top.chinaz.com/.
+                                                                    [9] Chinese wiki corpus. online, 2019. https://dumps.wikimedia.org/
+8     Conclusion                                                        zhwiki/latest/zhwiki-latest-pages-articles.xml.bz2.
+                                                                   [10] Language model. online, 2019. https://en.wikipedia.org/wiki/
+In this paper, we propose DM O S, a scalable cloud-based de-            Language_model.
+tector for promotional website defacements. Using DM O S,          [11] Selenium. online, 2019. https://www.seleniumhq.org/.
+we examine 38,526,989 web pages over 7,298 websites, find-         [12] Tencent url security center. online, 2019. https://urlsec.qq.com.
+ing 11% of which, to our surprise, have been defaced at least      [13] Tensorflow. online, 2019. https://www.tensorflow.org/.
+once. Our study demonstrates the pervasiveness of conspiring
+                                                                   [14] Tfidf. online, 2019. https://en.wikipedia.org/wiki/Tf%E2%80%
+acts between the seekers and promoters of illicit goods and             93idf.
+services over the Internet. By effectively detecting website de-   [15] Exploring google hacking techniques. online, 2020. https://
+facements at their early stage, DM O S has substantially raised         securitytrails.com/blog/google-hacking-techniques.
+the bar to thwart the negative impact of promotional deface-       [16] Kafka: A distributed streaming platform. online, 2020. https://
+ments as the site owners can quickly remove the illicit content         kafka.apache.org/intro.
+to contain its damage. The findings of our measurement study       [17] Sample defacement dataset of english webpages. online, 2020. http:
+also reveal new interesting phenomena in the Internet under-            //mobitec.ie.cuhk.edu.hk/DMoS/.
+ground ecosystem.                                                  [18] Some example tools for defacement and black hat seo. online, 2020.
+                                                                        http://www.zylou.cn/hmseo.
+                                                                   [19] Transformers: State-of-the-art natural language processing for py-
+Acknowledgements and Ethical Considerations                             torch and tensorflow 2.0. online, 2020. https://github.com/
+                                                                        huggingface/transformers.
+                                                                   [20] B ORGOLTE , K., K RUEGEL , C., AND V IGNA , G. Delta: Automatic
+We thank our shepherd Prof. Bimal Viswanath and the anony-
+                                                                        identification of unknown web-based infection campaigns. In Proceed-
+mous reviewers for their valuable comments, which help to               ings of the 2013 ACM SIGSAC Conference on Computer & Communi-
+improve the paper considerably. We also thank our colleagues            cations Security.
+Shangcheng Shi, Zuoye Gong, and Zhiyi Cheng for their help         [21] B ORGOLTE , K., K RUEGEL , C., AND V IGNA , G. Meerkat: Detecting
+in this work. This research is supported in part by the CUHK            website defacements through image-based object recognition. In 24th
+Project Impact Enhancement Fund (Project#3133292) and the               USENIX Security Symposium.
+CUHK MobiTeC R&D Fund. For all the Chinese websites in             [22] C HEN , T., AND G UESTRIN , C. Xgboost: A scalable tree boosting sys-
+                                                                        tem. In Proceedings of the 22nd acm sigkdd international conference
+our experiments, crawling and detection of websites are au-
+                                                                        on knowledge discovery and data mining (2016), ACM, pp. 785–794.
+thorized by their owners with legal agreements. The crawled
+                                                                   [23] C HUNG , Y.- J ., T OYODA , M., AND K ITSUREGAWA , M. A study of
+pages are kept privately and cannot be shared with the public.          link farm distribution and evolution using a time series of web snap-
+We have informed owners of all the 824 defaced websites de-             shots. In Proceedings of the 5th international workshop on Adversarial
+tected in our online experiment and provided them a complete            information retrieval on the Web (2009), ACM, pp. 9–16.
+list of defaced page URLs. All the site owners had subse-          [24] D EVLIN , J., C HANG , M.-W., L EE , K., AND T OUTANOVA , K. Bert:
+quently confirmed our findings, removed the illicit content,            Pre-training of deep bidirectional transformers for language understand-
+and deployed further security measures. For the defacements             ing. In Proceedings of the 2019 Conference of the North American
+                                                                        Chapter of the Association for Computational Linguistics: Human
+we identified throughout our English dataset collection pro-            Language Technologies, Volume 1, pp. 4171–4186.
+cess, most affected websites had removed the illicit content       [25] G. DAVANZO , E. M., AND BARTOLI , A. Anomaly detection tech-
+by themselves during our experiment. We have notified four              niques for a web defacement monitoring service. In Expert Systems
+websites where defacements remain.                                      with Applications (2011).
+
+
+
+
+USENIX Association                                                                       30th USENIX Security Symposium                  3719
+[26] G ESENHUES , A. Study: Organic search drives 51% of traffic, social            [44] WANG , P., M I , X., L IAO , X., WANG , X., Y UAN , K., Q IAN , F., AND
+     only 5%. Search Engine Land (2014).                                                 B EYAH , R. Game of missuggestions: Semantic analysis of search-
+                                                                                         autocomplete manipulations. In 25th Annual Network & Distributed
+[27] G OOGLE. Policies for content posted by users on search. on-
+                                                                                         System Security Symposium (NDSS) (2018).
+     line, 2018. https://support.google.com/websearch/answer/
+     7408270?hl=en.                                                                 [45] YANG , H., M A , X., D U , K., L I , Z., D UAN , H., S U , X., L IU , G.,
+                                                                                         G ENG , Z., AND W U , J. How to learn klingon without a dictionary:
+[28] IMF. The countries with the largest shadow economies. online, 2017.
+                                                                                         Detection and measurement of black keywords used by the underground
+     https://tinyurl.com/x0b0r79y.
+                                                                                         economy. In 2017 IEEE Symposium on Security and Privacy (SP),
+[29] J OHN , J. P., Y U , F., X IE , Y., K RISHNAMURTHY, A., AND A BADI ,                pp. 751–769.
+     M. deseo: Combating search-result poisoning. In USENIX security
+                                                                                    [46] YANG , Z., YANG , D., DYER , C., H E , X., S MOLA , A., AND H OVY,
+     symposium (2011), pp. 20–35.
+                                                                                         E. Hierarchical attention networks for document classification. In
+[30] J OSLIN , M., L I , N., H AO , S., X UE , M., AND Z HU , H. Measuring               Proceedings of the 2016 conference of the North American chapter of
+     and analyzing search engine poisoning of linguistic collisions. In                  the association for computational linguistics: human language tech-
+     Proceedings-IEEE Symposium on Security and Privacy (2019), IEEE.                    nologies, pp. 1480–1489.
+[31] J OULIN , A., G RAVE , E., B OJANOWSKI , P., AND M IKOLOV, T. Bag              [47] Y UAN , K., L U , H., L IAO , X., AND WANG , X. Reading thieves’ cant:
+     of tricks for efficient text classification. In Proceedings of the 15th Con-        automatically identifying and understanding dark jargons from cyber-
+     ference of the European Chapter of the Association for Computational                crime marketplaces. In 27th USENIX Security Symposium (2018),
+     Linguistics: Volume 2, Short Papers (2017), pp. 427–431.                            pp. 1027–1041.
+[32] L AN , Z., C HEN , M., G OODMAN , S., G IMPEL , K., S HARMA , P., AND          [48] Y UAN , K., TANGY, D., L IAO , X., WANG , X., F ENG , X., C HEN , Y.,
+     S ORICUT, R. Albert: A lite bert for self-supervised learning of language           S UN , M., L U , M., AND Z HANG , K. Stealthy porn: Understanding real-
+     representations. In International Conference on Learning Representa-                world adversarial images for illicit online promotion. In Proceedings-
+     tions (2019).                                                                       IEEE Symposium on Security and Privacy (2019).
+[33] L EONTIADIS , N., M OORE , T., AND C HRISTIN , N. A nearly four-year           [49] Y UJIAN , L., AND B O , L. A normalized levenshtein distance metric.
+     longitudinal study of search-engine poisoning. In Proceedings of the                IEEE transactions on pattern analysis and machine intelligence 29, 6
+     2014 ACM SIGSAC Conference on Computer and Communications                           (2007), 1091–1095.
+     Security, pp. 930–941.
+[34] L EONTIADIS , N., M OORE , T., AND C HRISTIN , N. Measuring and
+     analyzing search-redirection attacks in the illicit online prescription        A     Collecting Alarming Keywords
+     drug trade. In USENIX Security Symposium (2011), vol. 11.
+[35] L IAO , X., Y UAN , K., WANG , X., P EI , Z., YANG , H., C HEN , J., D UAN ,   Compared to illicit keywords, developing the alarming key-
+     H., D U , K., A LOWAISHEQ , E., A LRWAIS , S., ET AL . Seeking non-            words turns out to be relatively straightforward. While de-
+     sense, looking for trouble: Efficient promotional-infection detection          facers often obfuscate keywords, it noteworthy that many
+     through semantic inconsistency search. In 2016 IEEE Symposium on
+                                                                                    obfuscated jargons share the same stem (i.e., commonly-used
+     Security and Privacy (SP), pp. 707–723.
+                                                                                    sequence). For example, there are many illicit phrases derived
+[36] M AGGI , F., BALDUZZI , M., F LORES , R., G U , L., AND C IANCAGLINI ,
+     V. Investigating web defacement campaigns at large. In Proceedings
+                                                                                    from “mark six”, like “buy mark six in Hong Kong” or “Hong
+     of the 2018 on Asia Conference on Computer and Communications                  Kong mark six”. However, the stem “mark six” is seldom
+     Security.                                                                      changed. As such, the number of stems is limited, making
+[37] M IKOLOV, T., C HEN , K., C ORRADO , G., AND D EAN , J. Efficient              them suitable as alarming keywords. Specifically, we build
+     estimation of word representations in vector space. arXiv preprint             the alarming keywords as follows:
+     arXiv:1301.3781 (2013).
+                                                                                        • We build a dictionary of stop words (e.g., “the”, “Hong
+[38] P ENNINGTON , J., S OCHER , R., AND M ANNING , C. Glove: Global                      Kong”), which are used in the legitimate dataset as well.
+     vectors for word representation. In Proceedings of the 2014 conference
+     on empirical methods in natural language processing (EMNLP) (2014),
+                                                                                        • For each phrase, we remove the stop words. For example,
+     pp. 1532–1543.                                                                       “buy mark six in Hong Kong” becomes “buy mark six”.
+[39] S AXE , J., H ARANG , R., W ILD , C., AND S ANDERS , H. A deep learn-              • We extract all n-gram sequences where n is larger than
+     ing approach to fast, format-agnostic detection of malicious web con-                a threshold θn (set to 2), e.g., “buy mark six” is splitted
+     tent. In 2018 IEEE Security and Privacy Workshops (SPW), pp. 8–14.                   into “buy mark”, “mark six”, and “buy mark six”.
+[40] SEOMOZ. Google algorithm change history. online, 2018. https:                      • For each sequence, we compute its frequency in the de-
+     //moz.com/google-algorithm-change.                                                   faced and legitimate dataset, fd and fl , respectively.
+[41] VASWANI , A., S HAZEER , N., PARMAR , N., U SZKOREIT, J., J ONES ,                 • Finally, we compute the frequency difference fd − fl for
+     L., G OMEZ , A. N., K AISER , Ł., AND P OLOSUKHIN , I. Attention is                  all substrings, starting from the shortest one. If it is more
+     all you need. In Advances in neural information processing systems
+     (2017), pp. 5998–6008.
+                                                                                          than a threshold θalarm , we include this sequence as an
+                                                                                          alarming keyword.
+[42] WANG , D. Y., D ER , M., K ARAMI , M., S AUL , L., M C C OY, D., S AV-
+                                                                                    Note that we will extract at least one sequence from every il-
+     AGE , S., AND VOELKER , G. M. Search+ seizure: The effectiveness of
+     interventions on seo campaigns. In Proceedings of the 2014 Conference          licit phrase to ensure the completeness of alarming keywords.
+     on Internet Measurement Conference, pp. 359–372.
+[43] WANG , D. Y., S AVAGE , S., AND VOELKER , G. M. Cloak and dagger:
+     dynamics of web search cloaking. In Proceedings of the 18th ACM
+     conference on Computer and communications security (2011), pp. 477–
+     490.
+
+
+
+
+3720      30th USENIX Security Symposium                                                                                               USENIX Association
+

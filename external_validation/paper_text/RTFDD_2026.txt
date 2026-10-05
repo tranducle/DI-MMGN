@@ -1,0 +1,424 @@
+    RTFDD: A Robust Two-Stage Framework For
+           Web Defacement Detection
+
+            Hai-Dang Phan1[0009−0007−1855−4502] , Trong Hung
+    Nguyen                   , Ngoc Khanh Huynh1[0009−0006−6310−4490] ,
+           1[0009−0006−6916−5921]
+
+           Cong-Hoang Diem 2[0009−0008−7025−4205]
+                                                  , and Duc-Tho
+                      Mai3,∗[0000−0001−5593−3615]
+                   1
+                    People’s Security Academy, Hanoi, Vietnam
+     {phanhaidang060102,tronghungt31,truongtrungduykhanh10}@gmail.com
+           2
+              Vietnam National University, Hanoi - International School
+                              hoangdc@vnu.edu.vn
+             3
+               Academy of Cryptography Techniques, Hanoi, Vietnam
+                Corresponding email: ductho-mai@actvn.edu.vn
+
+
+      Abstract. Defacement attacks currently pose one of the most signifi-
+      cant threats to web applications. Attackers often utilize this method to
+      leave messages and signatures, which serve as a form of propaganda or
+      a demonstration of power. However, existing detection methods mainly
+      focus on content-based analysis, which can consume substantial compu-
+      tational resources, require extended processing times, and reduce accu-
+      racy. Furthermore, these methods typically overlook the attackers’ sig-
+      natures—an indicator that may seem simple but is highly effective for
+      detection. This paper proposes a defacement detection framework that
+      integrates signature analysis with an attack detection model, combining
+      image, text, and HTML features. This framework is capable of effectively
+      handling both static and dynamic web pages. Experimental evaluations
+      conducted on a dataset of 20,255 collected signatures and 96,220 web
+      pages demonstrate that our approach achieves an accuracy rate of up
+      to 99.23%, with a False Alarm Rate (FAR) of only 0.38%, surpassing
+      existing detection methods.
+
+
+1   Introduction
+Web defacement is a type of attack targeting web servers, typically involving
+alterations to the content, layout, color scheme, or images of a website [1,2]. The
+primary purpose of such attacks is to highlight security vulnerabilities to the
+website owner. However, certain groups also exploit defacement attacks to sab-
+otage websites, damage their reputation, or deceive users by spreading false or
+misleading information. Hackers commonly deface websites to leave behind their
+signatures and messages, resembling street art in the digital realm. Many at-
+tacker groups use these defaced web pages as a canvas to showcase their presence
+and achievements, often as a form of self-promotion or ideological expression.
+    Web defacement detection techniques are commonly divided into anomaly-
+based, signature-based, and Machine Learning (ML) approaches. Traditional
+anomaly-based methods, such as checksum and DIFF comparison, are simple
+and fast but only suitable for static websites. In contrast, advanced techniques
+like statistical analysis, genetic programming, and ML handle dynamic websites
+more effectively but require higher computational resources. Signature-based
+detection relies on known attack patterns for quick identification but cannot de-
+tect novel attacks. Despite extensive research, few solutions combine the speed
+of signature-based methods with the adaptability of anomaly-based techniques.
+    This section reviews prior studies on both approaches. Signature-based meth-
+ods rely on predefined patterns derived from previously known attacks, such as
+specific keywords, URLs, or HTML structures. These techniques enable fast
+and accurate detection of previously observed attacks but face challenges in
+identifying new or modified attack variants. Harahap et al. [3] developed a low-
+computational-cost method for detecting website defacement in university do-
+mains using predefined attack signatures. Their approach utilizes patterns such
+as keywords, URLs, or HTML structures. However, its dependence on known
+signatures and limited capability in analyzing dynamic content or multimedia
+elements reduces its effectiveness against novel attacks. To overcome these limi-
+tations, hybrid techniques have been explored. Hoang et al. [4] proposed a system
+that combines supervised ML with signature-based integrity verification using
+hash functions. Although effective in detecting tampering in static HTML con-
+tent, the hash-based approach is sensitive to minor changes, which may lead to
+a high false positive rate when applied to dynamic or multimedia content.
+    Anomaly-based detection models, particularly those utilizing ML, have at-
+tracted considerable research interest. Burruss et al. [5] used a finite mixture
+model to classify attackers into low- and high-volume groups, offering behav-
+ioral insights but lacking real-time detection capabilities. Almomani et al. [6]
+proposed an Enhanced URL Defacement Detection model using Particle Swarm
+Optimization (PSO) to improve feature selection, achieving 92.5% accuracy on
+static datasets. However, its reliance on URL features limits performance on dy-
+namic websites and multimedia content. Wu et al. [7] applied a Support Vector
+Machine (SVM) to HTML features, reaching 87.3% accuracy but meeting with
+high FAR due to fixed thresholds and weak performance on visually rich content.
+Hoang et al. [8] employed BiLSTM on webpage text yet ignored HTML struc-
+ture and embedded media, reducing effectiveness on complex pages. Nguyen
+et al. [9] combined text and screenshot data but only averaged outputs from
+separate models without integrating cross-modal interactions, limiting overall
+performance.
+    The limitations of current website defacement detection solutions include
+(1) focusing mainly on URL content while neglecting actual webpage content,
+leading to low effectiveness; (2) being suitable only for static websites; (3) high
+false alarm rates due to fixed detection thresholds; (4) inadequate processing of
+images and HTML structure; and (5) limited feature integration, relying only
+on separate evaluations of individual data types. To address these issues, this
+paper makes three key contributions as follows:
+ – the construction of a comprehensive dataset containing over 96,000 web
+   pages with image, text, and HTML data, along with more than 20,200 unique
+   defacement signatures for improved signature-based detection;
+ – the proposal of a multimodal detection model that combines image, text,
+   and HTML features, outperforming prior anomaly-based methods;
+ – the development of a two-stage detection framework that integrates signature-
+   based and multimodal analysis to enhance accuracy, reduce false positives,
+   and improve processing speed.
+   The rest of this paper is organized as follows: Section 2 introduces the pro-
+posed approach, Section 3 presents and analyzes the experimental results. In
+Section 4, we have a conclusion and suggest the future direction of this study.
+
+
+2     Proposed Methodologies
+This section introduces the proposed robust two-stage framework for the web
+defacement detection model, RTFDD. The model combines signature-based de-
+tection in the first stage with a deep learning-based detection approach in the
+second stage. If no known signature is detected during the initial phase, the sys-
+tem proceeds to the deep learning model, which leverages multimodal features
+- including visual, textual, and HTML characteristics - to identify potential de-
+facement attacks.
+
+2.1   Overview
+Figure 1 illustrates the overall architecture of the proposed RTFDD (Robust
+Two-Stage Framework for Web Defacement Detection). The hybrid framework
+consists of two main stages: a signature-based detection module and an anomaly-
+based deep learning module. In the first stage, incoming webpages are first pro-
+cessed and compared against a database of predefined defacement signatures. If
+a match is found, the system immediately raises a defacement alert. If no match
+is detected, the input proceeds to the second stage, where a multimodal deep
+learning model is used for anomaly detection. In the anomaly-based stage, the
+webpage content is divided into three modalities: HTML structure, textual con-
+tent, and screenshot image. Each modality is processed separately through ded-
+icated modules: HTML features are extracted using a pretrained BERT model
+applied to the DOM tree, text features are processed through a text encoder, and
+image features are extracted via a CNN-based model. These features are then
+fused through a transformer-based integration layer, followed by a multi-layer
+perceptron classifier to make the final defacement decision.
+
+2.2   Signature-based Attack Detection
+The first stage of the RTFDD framework leverages a signature-based detection
+mechanism to rapidly identify known web defacement attacks. This stage is de-
+signed to be lightweight and computationally efficient, making it suitable for
+      Fig. 1. The proposed two-stage framework for web defacement detection.
+
+
+
+real-time monitoring of large-scale web environments. To implement this mech-
+anism, a comprehensive signature database has been constructed, consisting of
+20,255 unique signatures extracted from previously recorded web defacement
+incidents. These signatures were collected from publicly available defacement
+archives, security forums, and manually labeled datasets. Each signature en-
+codes distinct indicators of compromise, including specific keywords commonly
+used by attackers (e.g., "Hacked by", "Owned by"). During detection, the incom-
+ing webpage is scanned and tokenized to extract relevant textual and structural
+features. These features are then matched against the signature database using
+a fast matching algorithm based on approximate string matching and rule-based
+pattern recognition. If a match is found, the system immediately classifies the
+page as defaced, and an alert is generated. This early detection step allows the
+system to block well-known attacks quickly, reducing the burden on the more
+resource-intensive deep learning model in the second stage.
+
+
+2.3   Anomaly-based Attack Detection Using Feature Fusion
+
+In the second stage of the RTFDD framework, an anomaly-based detection ap-
+proach is employed to identify web defacement attacks that cannot be captured
+by known signatures. This stage utilizes a multimodal deep learning architecture
+that integrates features extracted from the HTML structure, textual content, and
+webpage screenshots.
+
+
+
+
+          Fig. 2. DOM Tree Processing with Pre-order and Max 5 tokens.
+
+
+    HTML Feature Extraction: The HTML content of each webpage is first
+parsed into a DOM tree, where each node contains both tag information and
+associated textual content. To reduce noise, non-informative elements such as
+<script> and <style> tags are removed, while useful attributes like class and
+id are retained. Given the complexity and size of DOM trees, the structure is
+then divided into overlapping subtrees using a sliding window based on a fixed
+number of tokens. This preserves local context and prevents the loss of important
+structural relationships.
+    Each subtree is serialized and encoded using a transformer-based encoder
+with modified positional embeddings to reflect parent-child and sibling relation-
+ships between nodes. In particular, despite the initial cleaning process, many
+DOM trees still consist of thousands of tokens and data points, many of which
+lack semantic significance. This poses a challenge when feeding the data into
+modern deep learning models. To address this, the DOM tree is further divided
+into overlapping subtrees using a sliding window approach based on a fixed to-
+ken size m. Unlike conventional text-based sliding windows, which often disrupt
+crucial parent-child relationships, this method keeps semantically related nodes
+intact. The segmentation process begins at the root of the DOM tree and fol-
+lows a pre-order traversal. The first subtree is constructed by collecting up to m
+tokens. Then, additional subtrees are created by gradually expanding the cur-
+rent subtree with newly encountered nodes, while older, less relevant nodes are
+pruned. This dynamic expansion and pruning mechanism help retain meaningful
+structural context throughout the segmentation. For instance, as illustrated in
+Figure 2, the tree is traversed in pre-order with a maximum token limit of 5. At
+each iteration, the subtree is updated by incorporating new nodes and discarding
+those that fall outside the sliding window. The final subtree at any point con-
+tains the most recently added nodes along with relevant nodes preserved from
+earlier steps.
+    The model is further pretrained based on Bert-base-uncase [10] on unlabeled
+HTML webpages using the Masked Language Modeling (MLM) objective to
+learn structural and semantic representations specific to web layout. The core
+of this encoder is the self-attention mechanism [11], where the model learns to
+create representations of a token by aggregating information from other tokens
+in the input sequence. Specifically, this paper first randomly selects 15% of token
+positions, then repeatedly samples DOM nodes and adds all their tokens to the
+mask until the total number of masked tokens reaches the desired 15%. As in
+BERT, for a chosen position, (1) replace it with a special token [MASK] 80% of
+the time, (2) replace it with a random token 10% of the time, and (3) leave it
+unchanged in the remaining cases as described in Figure 3.
+
+
+
+
+                         Fig. 3. Pretraining with HTML.
+
+
+   Text and Image Feature Extraction: Textual data extracted from the
+webpage body is preprocessed and tokenized by Tokenizer [12]. A Bidirectional
+Long Short-Term Memory (BiLSTM) network is used to encode the sequence of
+tokens, capturing both forward and backward contextual dependencies. The out-
+put is a dense vector representation reflecting the semantic structure of the text
+content. Webpage screenshots are standardized to a fixed resolution of 224×224
+pixels, and their pixel values are normalized to the range [0, 1]. The preprocessed
+images are then passed through an EfficientNetB0 [13] to extract visual features
+that capture layout, color distribution, and embedded visual elements relevant
+to potential defacement indicators.
+    Fusion Feature: The feature vectors obtained from the HTML (denoted as
+H), text (T), and image (I) branches are concatenated into a unified set of feature
+vectors: F = H ∪T ∪I. These vectors are passed into a transformer encoder with
+self-attention, which allows the model to compute interactions across different
+modalities, learning joint representations that integrate structural, textual, and
+visual cues. The output of the transformer is then fed into a multi-layer per-
+ceptron (MLP) classifier, which outputs a binary label indicating whether the
+webpage has been defaced or is benign. This multimodal design addresses key
+limitations of previous methods by enabling the model to detect sophisticated
+defacement attempts that manipulate layout, alter textual content, or modify
+visual presentation. It ensures robustness across both static and dynamic web-
+pages and enhances generalization to previously unseen attack patterns.
+
+
+3     Experiments and Evaluation
+
+3.1   Dataset Processing
+
+Previous studies in this domain have highlighted several limitations, such as the
+use of statistical methods without access to appropriate datasets, reliance on lim-
+ited or confidential data, and a narrow focus on specific modalities such as text
+or image, which reduces detection effectiveness. Moreover, prior research has not
+introduced any comprehensive signature datasets specifically designed for deface-
+ment detection. To ensure a fair and reliable evaluation, we re-implemented rep-
+resentative detection methods and developed a customized dataset for training
+and testing purposes. This dataset includes both normal and defaced websites:
+normal samples were collected from top-ranked Alexa websites [14], while defaced
+samples were obtained from Zone-h.org [15]. Using a toolset based on Selenium
+WebDriver [16] and BeautifulSoup, we extracted HTML content, textual infor-
+mation, and page screenshots from each web page. The final dataset comprises
+57,120 labeled normal samples and 39,100 defaced samples. From the 39,100 de-
+faced samples, we further extracted a collection of 20,255 distinct defacement
+signatures, which serve as the foundation for the signature-based detection com-
+ponent of our system.
+
+
+3.2   Experimental Setups
+
+For the pretraining phase, the model utilizes BERT-base-uncased as the back-
+bone and performs fine-tuning with a hidden layer size of 768. The model is
+pretrained using unlabeled HTML data extracted from the prepared dataset for
+5 epochs, with a batch size of 16 and a learning rate of 2e−5 . For the classifica-
+tion phase, a deep learning-based model is employed. The training parameters
+of the classification model are summarized in Table 1. Notably, the final layers
+of the network consist of fully connected layers, with 256 units in the first layer,
+followed by 2 output units representing the two classes: defaced and benign.
+                            Table 1. Experiment Setups
+
+               Component Specification
+               CPU           CPU Intel Xeon (2.6 GHz)
+               GPU           NVIDIA Tesla P100 (VRAM 16GB)
+               RAM           29 GB
+               Epochs        10
+               Batch Size    16
+               Optimizer     Adam
+               Learning rate 2e−5
+               Loss function Cross Entropy
+
+
+3.3   Results and Analysis
+
+For the signature-based classification phase, the model utilizes the collected sig-
+nature dataset. It performs pattern matching between the signatures and the in-
+put web content to determine whether the page has been defaced. Pages flagged
+as suspicious are then passed to the deep learning-based detection model for
+further verification.
+    Figure 4 illustrates comparable accuracy trends, highlighting the robustness
+of our deep learning-based model. The plotted curves demonstrate a consistent
+pattern, featuring rapid convergence in the initial stages and steady improve-
+ment thereafter. The close correlation between training and validation results
+reinforces the model’s generalization ability and its effectiveness in accurate de-
+tection.
+    For the deep learning-based classification phase, the paper utilizes the con-
+structed dataset as described in Section 3.1, with a train-test split ratio of 80:20.
+The study evaluates several previously proposed methods on this newly con-
+structed dataset, including Random Forest [4], BiLSTM [8], and BiLSTM +
+EfficientNet [9]; as well as the method by Wu et al. [7]. In addition, the pa-
+per evaluates two proposed deep learning-based detection models: one based on
+BERT and another based on feature fusion. Furthermore, the paper assesses the
+proposed two-stage RTFDD framework, which combines signature-based detec-
+tion with the deep learning-based feature fusion model. The results are evaluated
+based on two main criteria: detection accuracy, including related metrics such
+as Recall, Precision, and F1-score, and execution performance, which includes
+inference time and detection speed. Since the proposed model incorporates a
+signature-based detection phase, the detection time is specifically measured on
+the 20% test subset to reflect realistic performance under deployment conditions.
+
+    Table 2 presents the experimental results of various defacement detection
+models, highlighting the effectiveness of RTFDD in identifying defacement at-
+tacks. The deep learning-based model utilizes a feature fusion strategy, combin-
+ing HTML features extracted using the proposed method, textual features pro-
+cessed by a BiLSTM model, and visual features from the EfficientNetB0 model.
+Fig. 4. Training and validating accuracy over epochs during the model training process
+
+
+
+
+               Table 2. Performance Comparison of Various Models
+
+ Model                  Accuracy (%) Precision Recall F1-score Time (s)
+ Hoang et al. [4]       86.03        94.28     69.35 79.92     0.0007
+ Wu et al. [7]          91.28        91.26     91.28 91.26     0.0003
+ Hoang et al. [8]       96.54        96.93     94.43 95.66     0.0008
+ Nguyen et al. [9]      97.49        97.76     95.99 96.87     0.0112
+ BERT-base-uncased      90.56        93.50     82.63 87.73     0.0061
+ Pretrained only (Ours) 95.79        94.81     93.59 94.20     0.0062
+ Fusion (Ours)          98.97        98.76     98.39 98.57     0.0134
+ RTFDD (Ours)           99.23        99.62     98.14 98.87     0.0033
+In addition, RTFDD integrates signature-based analysis with the proposed deep
+learning approach to enhance its ability to detect a wide range of defacement
+patterns. This hybrid mechanism allows the system to leverage both precise pat-
+tern matching and robust feature learning. As a result, RTFDD outperforms all
+previously proposed methods, achieving an impressive accuracy of 99.23% and
+an F1-score of 98.87%, while maintaining a low false alarm rate of just 0.38%.
+These results underscore the superior performance of RTFDD in detecting web
+defacement attacks. Notably, this combination also leads to significantly faster
+execution time compared to previous deep learning-based methods such as those
+proposed by Nguyen et al. [9] and others based only on deep learning models.
+Moreover, it delivers acceptable processing times relative to traditional machine
+learning approaches while offering substantially superior accuracy.
+
+
+4   Conclusion
+
+In this study, the authors proposed a new method for detecting web defacement
+attacks based on a two-stage model named RTFDD, which combines signature-
+based analysis with deep learning techniques that integrate visual, textual, and
+HTML features. An effective framework was introduced for extracting features
+from HTML, a data source that has been underutilized in previous research.
+During the process, the authors also constructed a comprehensive dataset com-
+prising over 20,200 defacement signatures and more than 96,000 webpages, each
+with associated screenshots, textual, and HTML data. Experimental evaluation
+conducted on a dataset consisting of 20,225 signatures and 96,220 webpages
+confirmed the superior performance of the proposed method, achieving an ac-
+curacy of 99.23% and a false positive rate of only 0.38%. This detection ap-
+proach enhances accuracy while maintaining fast computational performance,
+due to the incorporation of signature matching in the detection process. How-
+ever, the deep learning component remains resource-intensive, which may limit
+the scalability of the model in certain real-world web security deployments. Fu-
+ture research directions include optimizing the deep learning module to minimize
+computational overhead, thereby facilitating deployment in resource-constrained
+or real-time web monitoring environments. Furthermore, extending the dataset
+to encompass multilingual content and a wider variety of website architectures is
+expected to enhance the generalizability and resilience of the proposed approach
+against emerging and sophisticated web defacement techniques.
+
+
+References
+1. Albalawi, M., Aloufi, R., Alamrani, N., Albalawi, N., Aljaedi, A., Alharbi, A.R.:
+   Website defacement detection and monitoring methods: A review. Electronics
+   11(21), 3573 (2022). https://doi.org/10.3390/electronics11213573
+2. Tanvi, Bhandari, A.: ML-Based Methods for Detecting Phishing Websites: A Com-
+   prehensive Survey and Analysis. SSRN Journal (2024). https://doi.org/10.2139/
+   ssrn.4829465
+3. Harahap, H., Ridho, F.: Detection of online gambling web defacement in university
+   domains using attack signatures. In: Proc. 2024 Int. Conf. on Artificial Intelligence,
+   Blockchain, Cloud Computing, and Data Analytics (ICoABCD), pp. 73–78. IEEE
+   (2024). https://doi.org/10.1109/ICoABCD63526.2024.10704413
+4. Hoang, X.D., Nguyen, N.T.: Detecting website defacements based on machine
+   learning techniques and attack signatures. Computers 8(2), 35 (2019). https:
+   //doi.org/10.3390/computers8020035
+5. Burruss, G.W., Howell, C.J., Maimon, D., Wang, F.: Website defacer classification:
+   A finite mixture model approach. Soc. Sci. Comput. Rev. 40(3), 775–787 (2022).
+   https://doi.org/10.1177/0894439321994232
+6. Almomani, O., Alsaaidah, A., Abu-Shareha, A.A., Alzaqebah, A., Almaiah, M.A.,
+   Shambour, Q.: Enhance URL Defacement Attack Detection Using Particle Swarm
+   Optimization and Machine Learning. J. Comput. Cogn. Eng. (2025). https://doi.
+   org/10.47852/bonviewJCCE52024668
+7. Wu, S., Tong, X., Wang, W., Xin, G., Wang, B., Zhou, Q.: Website defacements
+   detection based on support vector machine classification method. In: Proc. 2018 Int.
+   Conf. on Computing and Data Engineering (ICCDE), pp. 62–66. ACM, Shanghai
+   (2018). https://doi.org/10.1145/3219788.3219804
+8. Hoang, X.D., Nguyen, T.H., Pham, H.D.: A novel model for detecting web de-
+   facement attacks transformer using plain text features. Indones. J. Electr. Eng.
+   Comput. Sci. 37(1), 232–240 (2025). https://doi.org/10.11591/ijeecs.v37.i1.
+   pp232-240
+9. Nguyen, T.H., Hoang, X.D., Nguyen, D.D.: Detecting website defacement attacks
+   using web-page text and image features. Int. J. Adv. Comput. Sci. Appl. 12(7),
+   215–222 (2021). https://doi.org/10.14569/IJACSA.2021.0120725
+10. Devlin, J., Chang, M.-W., Lee, K., Toutanova, K.: BERT: Pre-training of deep
+   bidirectional transformers for language understanding. In: Proc. 2019 Conf. of the
+   North American Chapter of the Association for Computational Linguistics: Human
+   Language Technologies (NAACL-HLT), vol. 1, pp. 4171–4186. ACL, Minneapolis
+   (2019). https://doi.org/10.18653/v1/N19-1423
+11. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser,
+   Ł., Polosukhin, I.: Attention is all you need. In: Adv. Neural Inf. Process. Syst. 30
+   (NeurIPS 2017), Long Beach (2017)
+12. TensorFlow, https://www.tensorflow.org/. Last accessed June 2025
+13. Tan, M., Le, Q.V.: EfficientNet: Rethinking model scaling for convolutional neu-
+   ral networks. In: Chaudhuri, P., Salakhutdinov, R. (eds.) Proc. 36th Int. Conf. on
+   Machine Learning (ICML 2019), vol. 97, pp. 6105–6114. PMLR (2019)
+14. Alexa: Top 1 Million Domains. https://www.kaggle.com/datasets/cheedcheed/
+   top1m?select=top-1m.csv. Last accessed June 2025
+15. Zone-H.org, http://zone-h.org/?hz=1. Last accessed June 2025
+16. Selenium, https://www.selenium.dev/. Last accessed June 2025
+

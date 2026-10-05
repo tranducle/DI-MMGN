@@ -1,0 +1,338 @@
+                                                                                                                                                                                     DefacementFusion: A Robust Multi-Modal
+                                                                                                                                                                                             Defacement Detection
+2025 2nd International Conference On Cryptography And Information Security (VCRIS) | 979-8-3315-6687-6/25/$31.00 ©2025 IEEE | DOI: 10.1109/VCRIS68011.2025.11250550
+
+
+
+
+                                                                                                                                                                                            Phan Hai Dang1 , Nguyen Trong Hung1 , Huynh Ngoc Khanh1 , Duc-Tho Mai2,∗
+
+
+                                                                                                                                                                          Abstract—Defacement attacks targeting websites have recently               promote distorted religious or political ideologies, or conduct
+                                                                                                                                                                       surged, becoming one of the most significant threats to organi-               other activities intended to affect the online community nega-
+                                                                                                                                                                       zations that offer services on web-based platforms. In response               tively. Due to the increasing prevalence of defacement attacks
+                                                                                                                                                                       to this escalating threat, various defacement detection solutions
+                                                                                                                                                                       have been proposed and implemented. However, many existing                    and their severe consequences on websites and web applica-
+                                                                                                                                                                       approaches face specific limitations: some are only effective for             tions, many countermeasures have been researched, developed,
+                                                                                                                                                                       static websites or those with infrequently changing content, while            and implemented in practice. Defacement detection methods
+                                                                                                                                                                       others can support dynamic websites but require considerable                  are commonly categorized into anomaly-based, signature-
+                                                                                                                                                                       computational resources or exhibit low detection accuracy due                 based, and machine learning techniques. Among traditional
+                                                                                                                                                                       to inadequate analysis of the diverse components that make up
+                                                                                                                                                                       a web interface, particularly the Hypertext Markup Language                   anomaly-based methods, such as checksum comparison, DIFF
+                                                                                                                                                                       (HTML) structure. To tackle these issues, this paper introduces               tools, and signature-based detection, checksum comparison is
+                                                                                                                                                                       two main parts: HTMLDeface2vec, a model that pulls structural                 the simplest and fastest. While these techniques are simple
+                                                                                                                                                                       data from HTML to spot defacement attacks, and Defacement-                    and provide rapid processing speed, they are only effective
+                                                                                                                                                                       Fusion, a deep learning model that detects issues by using                    in monitoring static websites. In contrast, techniques such
+                                                                                                                                                                       three important features of a web page: its screenshot (image),
+                                                                                                                                                                       text content (text), and HTML structure. DefacementFusion is                  as statistical methods, genetic programming, and machine
+                                                                                                                                                                       engineered to function effectively on both static and dynamic                 learning are more complex, requiring higher computational
+                                                                                                                                                                       web pages. The results from testing on a dataset of 96, 220 web               costs and slower processing times, but they can handle dy-
+                                                                                                                                                                       pages indicate that the system successfully detects attacks with              namic websites. Machine learning-based anomaly detection
+                                                                                                                                                                       an accuracy of 98.97% and a low false positive rate (FPR) of                  techniques have been instrumental in distinguishing defaced
+                                                                                                                                                                       1.24%, outperforming current detection methods.
+                                                                                                                                                                          Index Terms—Deep Learning, Website Defacement Detection,                   web pages from normal ones. The signature-based method
+                                                                                                                                                                       Multimodal Model, BERT, Web Application Security.                             stores known attack patterns (rules) to monitor webpages.
+                                                                                                                                                                                                                                                     When a match is found, it triggers an alarm for an attack.
+                                                                                                                                                                                                 I. I NTRODUCTION                                    While fast and effective for known attack types, it cannot
+                                                                                                                                                                          Website defacement refers to an attack that changes the                    detect new or unknown attacks.
+                                                                                                                                                                       appearance of a website or web page by attacking the avail-                      Burruss et al. [3] utilized a finite mixture model to classify
+                                                                                                                                                                       ability and integrity; however, it defaces the web page without               website defacers into low-volume (69%) and high-volume
+                                                                                                                                                                       access authorization [1], [2]. Defacement is a type of attack                 (31%) groups based on attack volume across 119 active
+                                                                                                                                                                       that targets websites, including changing the content, layout,                websites, providing insights into attacker behavior through
+                                                                                                                                                                       or images of the site. The purpose of these attacks is often                  factors like social media presence and defacement type,
+                                                                                                                                                                       to alert the site’s owner to patch security vulnerabilities;                  though limited to profiling rather than real-time detection.
+                                                                                                                                                                       however, some hackers use website defacement to destroy                       Conversely, Harahap et al. [4] developed a low-computational-
+                                                                                                                                                                       the website, ruin the website owner’s reputation, or cheat                    cost method using predefined attack signatures to detect web-
+                                                                                                                                                                       users by displaying fake information. Hackers often proceed                   site defacement in university domains, leveraging patterns
+                                                                                                                                                                       with website defacement attacks to leave their signatures and                 like keywords, Uniform Resource Locator (URL), or HTML
+                                                                                                                                                                       messages on websites, similar to street art. Many hacker                      structures, but its reliance on known signatures and lack
+                                                                                                                                                                       groups leave their signatures and messages on defaced sites                   of robust analysis for dynamic content or images restricts
+                                                                                                                                                                       to showcase their achievements.                                               its effectiveness against novel attacks. Almomani et al. [5]
+                                                                                                                                                                          Nonetheless, some groups perform defacements to warn site                  introduced a machine learning model enhanced by Particle
+                                                                                                                                                                       owners about their security flaws. In recent years, defacing                  Swarm Optimization (PSO) for detecting URL defacement
+                                                                                                                                                                       websites and web applications has become a common tool to                     attacks (Enhanced URL Defacement Detection). This method
+                                                                                                                                                                       spread messages and viewpoints among cybercriminal groups.                    optimizes feature selection to improve accuracy, achieving
+                                                                                                                                                                       These attackers often target popular and important websites,                  92.5% on a test dataset with static content. However, the model
+                                                                                                                                                                       including government websites, to spread misinformation,                      faces challenges with dynamic websites due to its reliance
+                                                                                                                                                                                                                                                     on URL features and limited ability to process embedded
+                                                                                                                                                                         1 Phan Hai Dang, Nguyen Trong Hung and Huynh Ngoc Khanh are with
+                                                                                                                                                                                                                                                     multimedia content, such as images and videos, leading to an
+                                                                                                                                                                       the Academy of People’s Security, Hanoi 12511, Vietnam.                       increased false detection rate when content changes frequently.
+                                                                                                                                                                         2   Duc-Tho Mai is with the Academy of Cryptography
+                                                                                                                                                                       Techniques (ACT), Hanoi 12511, Vietnam. Corresponding:                        Hoang et al. [6] developed a model combining supervised
+                                                                                                                                                                       ductho-mai@actvn.edu.vn                                                       machine learning with signature-based detection and hash-
+
+
+
+
+                                                                                                                                                                      Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+ based integrity checking for embedded files. This method is                   HTMLDeface2vec, a robust module designed to process the
+ effective for static HTML content, but hash-based checking                    structure of HTML based on the BERT [10] architecture.
+ for multimedia content has limitations, as minor changes can
+ evade detection, leading to a higher false detection rate. Wu et              A. HTMLDeface2vec: Feature Extraction from HTML
+ al. [7] utilized Support Vector Machine (SVM) for detecting                      When working with HTML data, the proposed method
+ defacement, extracting features from webpage content based                    represents a webpage using its DOM tree. Each node in
+ on HTML. This method achieved an accuracy of 87.3% on the                     this tree contains both textual content and its corresponding
+ test dataset but faced challenges with a high false alarm rate,               HTML markup, while the overall tree structure captures the
+ particularly when the detection threshold was not dynamically                 page layout and the relationships between different elements.
+ adjusted. It also lacked the ability to handle content with                   However, websites that have undergone defacement attacks
+ manually extracted features, leading to poor performance on                   often exhibit disrupted layouts, resulting in fragmented and
+ websites with extensive images and diverse content. Hoang                     incomplete DOM trees. This makes it particularly challenging
+ et al. [8] proposed a model that processes textual data of                    to encode the DOM as input for deep learning models for
+ webpages to detect web defacement based on deep learning                      two main reasons: (1) Most existing text encoders are built to
+ - BiLSTM, but this paper does not handle HTML structure                       process linear, unstructured text and are not suited to handle
+ or embedded content, limiting its effectiveness on complex                    the hierarchical nature of the DOM without customized pre-
+ websites with numerous images. In particular, Nguyen et al.                   processing; (2) compared to typical sentences, even a flattened
+ [9] introduced a model that combines both textual data and                    or serialized DOM tree tends to be excessively long—often
+ image data from the screen. However, this combined model                      comprising hundreds or thousands of nodes—which exceeds
+ merely integrates the results of two independent models, each                 the input limits of many neural network architectures. Arbi-
+ specialized for one data type. The final result is computed                   trary segmentation of this sequence may lead to the loss of
+ by averaging the evaluation scores of the two models. As a                    crucial contextual relationships.
+ result, it fails to establish meaningful connections or mutual                   1) Preprocessing for the DOM Tree: The objective is to
+ reinforcement between the text and the screenshot of the                      segment a DOM tree into a collection of subtrees, ensuring
+ webpage.                                                                      that each one retains the essential contextual information of
+    Thus, it can be observed that the limitations of the existing              the tokens it contains. This process involves two main stages.
+ website defacement detection solutions include (1) only con-                     In the first stage, the DOM tree is cleaned by eliminating
+ sidering URL-related content without focusing on processing                   nodes that contribute minimally to the page’s structure or
+ webpage content, thus achieving low effectiveness in practice.                semantics, such as <script> and <style> tags. At the
+ (2) Effective only on static websites or static content. (3)                  same time, important descriptive attributes, like the values of
+ High false alarm rate depending on the detection threshold.                   <class> and <id> tags in HTML elements, are preserved,
+ (4) Limited or partial handling of content, especially images                 as they provide valuable context for understanding the role
+ and HTML structure. (5) Feature combination is limited to                     and identity of each element within the page. However, even
+ evaluation results for each data type. Based on the above                     after the cleaning stage, many DOM trees may still contain
+ analysis, this paper contributes the following key points:                    thousands of data points and tokens, many of which carry lim-
+    • The paper introduces and develops a feature extraction                   ited semantic value. This results in excessive input lengths that
+      framework based on a transformer model for HTML                          are difficult to handle with most current deep learning models,
+      structure – HTMLDeface2vec. This framework facilitates                   making the direct processing of the entire DOM inefficient and
+      the construction of a Document Object Model (DOM)                        impractical. Next, the DOM tree is segmented into overlapping
+      tree and enables simultaneous encoding of both the                       subtrees using a fixed token size sliding window m. Unlike
+      semantic context of the HTML source code and the DOM                     traditional text-based sliding windows, which risk breaking
+      tree structure of web pages                                              important parent-child relationships, this approach ensures that
+    • This paper proposes DefacementFusion - a web deface-
+                                                                               semantically relevant nodes remain together. Starting from the
+      ment detection model that combines textual features,                     root, the tree is traversed in pre-order to construct the first
+      HTML structure features, and screenshots of web pages                    subtree containing up to m tokens. Subsequent subtrees are
+      to improve detection accuracy and reduce false alarms.                   generated by incrementally expanding the current subtree with
+                                                                               new nodes and pruning distant ones, preserving meaningful
+    The rest of this paper is organized as follows: Section II
+                                                                               context throughout the tree. For example, as shown in Figure 1,
+ introduces the proposed approach, Section III presents and
+                                                                               illustrating pre-order processing with a maximum of 5 tokens.
+ analyzes the experimental results. At last, in Section IV, we
+                                                                               At each step in the process, new nodes are added to the subtree,
+ have a conclusion and address the future direction of this study.
+                                                                               while older nodes beyond the current window are removed.
+                                                                               The resulting subtree at the end of the process includes all the
+                    II. PROPOSED APROACH
+                                                                               nodes that were most recently added and those retained from
+   This section introduces the proposed multi-modal model,                     previous steps.
+ DefacementFusion, which combines features from image, text,                      2) DOM Encoder: As previously mentioned, the goal is to
+ and HTML modalities. A key component of this model is                         enhance existing language model architectures, such as BERT
+
+
+
+
+Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+                               Fig. 1: DOM Tree Processing with Subtrees (Pre-order and Max 5 tokens).
+
+
+ [10], to effectively capture both structural and textual seman-
+ tics of the DOM. To this end, the transformer encoder from
+ BERT is utilized as the foundational encoding component. At
+ the heart of this encoder lies the self-attention mechanism
+ [11], which enables the model to generate contextualized
+ representations of each token by dynamically aggregating
+ information from all other tokens in the input sequence.
+ This mechanism allows the model to capture both local and
+ global dependencies, making it well-suited for representing the                                      Fig. 2: Pretrain model.
+ hierarchical and semantic richness of HTML content.
+    There are two fundamental distinctions between unstruc-
+ tured text and the DOM tree context that call for the devel-                  HTML DOM trees. To bridge this gap, we further pre-train the
+ opment of specialized positional embeddings suited to tree-                   model on a large collection of unlabeled web pages using the
+ structured data: (1) In contrast to linear text, tokens in a DOM              Masked Language Modeling objective adopted from BERT.
+ tree are organized hierarchically rather than sequentially. This                 In particular, the approach involves initially selecting 15%
+ means that, beyond capturing intra-node token relationships, it               of token positions at random. DOM nodes are then sampled
+ is also essential to incorporate contextual information from to-              iteratively, and all tokens within each sampled node are added
+ kens residing in other nodes throughout the tree.(2) The DOM                  to the mask set until the total number of masked tokens reaches
+ structure allows for various notions of relative positioning                  the 15% threshold. Following BERT’s masking strategy, for
+ between tokens or nodes, necessitating the use of differentiated              each selected token position: (1) 80% of the time it is replaced
+ positional embeddings to effectively represent these diverse                  with the special token [MASK]; (2) 10% of the time it
+ spatial relationships within the tree.                                        is replaced with a randomly chosen token; and (3) in the
+    3) Pretrain model: Given the transformer-based architec-                   remaining 10%, the token is left unchanged, as illustrated in
+ ture of the DOM structure encoder, it is possible to lever-                   Figure 2.
+ age parameters from pre-trained language models such as
+ BERT [10]. However, since BERT is trained exclusively on                      B. Feature extraction from text and image data
+ unstructured textual data, it may effectively model the textual                 For text and image data, the proposed model uses methods
+ semantics within individual DOM nodes but lacks the capacity                  similar to Nguyen et al. [9]: For the text data extracted from
+ to capture the structural and layout characteristics inherent in              web pages, pre-processing is performed to extract features for
+
+
+
+
+Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+ training, forming a vector representation for each page using                 effectiveness. To ensure a fair evaluation, we re-implemented
+ a Tokenizer. For the screenshot image data, preprocessing is                  representative methods and developed a custom dataset for
+ done in the following steps: standardized to the same size                    training and testing. The dataset includes both normal and
+ 224×224. The value of each pixel in the screen capture image                  defaced websites: normal data were collected from Alexa-
+ is normalized to the range [0, 1].                                            ranked sites [13], while defaced samples were obtained from
+                                                                               Zone-h.org [14]. Using a toolset based on Selenium WebDriver
+ C. Multi-modal defacement detection                                           [15] and BeautifulSoup, HTML, text, and page screenshots are
+    The proposed model utilizes a multimodal feature fusion                    extracted from the webpage. In total, the dataset comprises
+ approach that combines features extracted from the HTML                       57,120 labeled normal samples and 39,100 defaced samples.
+ source code, text, and screenshots of web pages. The advan-
+ tage of this approach is that it allows the model to combine                  B. Implementation Details
+ features extracted from the HTML source code, text data, and                     In the pre-training phase, unlabeled HTML data from a
+ screenshots of web pages. HTMLDeface2vec is an assumed                        custom-built dataset was utilized. The encoder was based on
+ feature extraction model designed to encode the structure                     the BERT-base-uncased architecture, comprising 110 million
+ and content of the DOM HTML tree. The DOM tree is                             parameters and a hidden size of 768. It was initialized with
+ divided into subtrees using a DOM tree processor algorithm.                   publicly available BERT-base-uncased weights and further pre-
+ Each subtree is encoded into a representation vector through                  trained on the HTML dataset for 5 epochs, using a batch size
+ HTMLDeface2vec, capturing both the textual content of the                     of 16 and a learning rate of 2e−5 . After pre-training and fine-
+ nodes and the structural relationships between them (e.g.,                    tuning, the encoder was employed in both experimental set-
+ parent-child, sibling). The output is a set of feature vectors H.             tings. For classification tasks, a two-layer feedforward neural
+ The textual content of the web page is extracted and processed                network was attached to the encoder’s output: the first layer
+ as a tokenized sequence. BiLSTM encodes the token sequence                    includes 256 hidden units with ReLU activation, followed
+ in both directions, creating rich contextual representations.                 by an output layer producing logits for two classes—defaced
+ This results in a set of feature vectors T . Screenshots related to           and benign. This architecture enabled effective discrimination
+ the web page are collected. EfficientNetB0 [12] processes each                between normal and defaced web pages.
+ image to generate feature vectors that capture visual elements                   All training and inference procedures in the classification
+ such as layout, colors, and objects. The output of EfficientNet               stages were conducted using the system configuration as
+ is a set of feature vectors of images I.                                      shown in Table I.
+    The feature vectors of the three extraction models (HTML,
+ Text, Image) are combined into a unified set F = H ∪ T ∪ I.                                    TABLE I: System Configuration
+ The set F is then fed into a transformer encoder with self-
+                                                                                         Component        Specification
+ attention. This process allows the model to compute the
+ relationships between the feature vectors, regardless of their                          CPU              CPU Intel Xeon (2.6 GHz)
+                                                                                         GPU              NVIDIA Tesla P100 (VRAM 16GB)
+ origin (HTML, text, or image). Finally, the model passes                                RAM              29 GB
+ the extracted features from the transformer into a multilayer                           Epochs           10
+ perceptron (MLP) to classify whether the input web page has                             Batch Size       16
+                                                                                         Optimizer        Adam
+ been defaced or is normal.                                                              Learning Rate    2e−5
+    Figure 3 illustrates the overall architecture of the proposed                        Loss function    Binary Cross Entropy
+ multimodal DefacementFusion model, which consists of three
+ main stages: pretraining, classification training, and classifica-
+ tion testing. In the pretraining stage, HTML documents are                    C. Results
+ processed through DOM tree preprocessing and fed into a                          Using the constructed dataset with an 80% training and
+ BERT-base-uncased model to generate pretrained representa-                    20% testing split, experiments on various proposed defacement
+ tions. The classification training stage combines three paral-                detection models, including those by Random Forest [6], BiL-
+ lel processing streams: HTML features through a pretrained                    STM [8], and EfficientNet; BiLSTM; BiLSTM + EfficientNet
+ model, text features via BiLSTM, and image features using                     [9]. We also evaluated the approach by Wu et al. [7], as
+ EfficientNetB0. These multi-modal features are then fused                     well as the models proposed in this study, which include
+ through a Transformer layer and classified using an MLP to                    processing HTML data using a pretrained BERT-Base encoder,
+ distinguish between defaced and benign web pages.                             the model utilizing HTMLDeface2vec, and the feature-fusion
+                                                                               model DefacementFusion.
+                        III. EXPERIMENTS
+                                                                                  Figure. 4 shows the training and validation accuracy curves
+ A. Datasets                                                                   for HTMLDeface2vec during the training process. Both curves
+    Previous studies in this domain have shown several limita-                 exhibit rapid improvement in the initial epochs, with the most
+ tions, such as using statistical methods without proper datasets,             significant gains occurring early in training. The small gap
+ relying on limited or confidential data, and focusing only on                 between training and validation curves throughout the process
+ specific modalities, like text or images, thus reducing detection             indicates excellent generalization with minimal overfitting.
+
+
+
+
+Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+                                                    Fig. 3: The Proposed Multi-modal Model
+
+
+
+
+ Fig. 4: Training and validation accuracy over epochs during                   Fig. 5: Training and validation accuracy over epochs during
+ the model training process of HTMLDeface2vec only.                            the model training process of DefacementFusion.
+
+
+ The steady convergence demonstrates the effectiveness of the                  accurate detection potential of DefacementFusion approach.
+ DOM tree preprocessing approach.                                                Table II presents the experimental results of models us-
+   Figure. 5 presents similar accuracy trends, confirming the                  ing HTML features to address HTMLDeface2vec features,
+ robustness of our model. The curves show consistent behavior                  which are effective for detecting defacement attacks. In this
+ with rapid early convergence followed by gradual improve-                     context, BERT-Base refers to the baseline model employing
+ ment. The close alignment between training and validation                     the pretrained BERT-Base encoder, while HTMLDeface2vec
+ performance further validates the generalization capability and               denotes the model after applying the proposed feature extrac-
+
+
+
+
+Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+ TABLE II: Performance Comparison of Models Using HTML                          Notably, the model demonstrates good detection capability
+ Feature                                                                        on static and dynamic webpages, addressing a significant
+    Model                     Accuracy   Precision   Recall   F1-score   FPR    limitation of traditional methods. This detection method im-
+    Hoang et al [6]            86.03       94.28     69.35     79.92     2.88
+    Wu et al. [7]              91.28       91.26     91.28     91.26     5.98   proves accuracy while maintaining acceptable computational
+    BERT-base-uncased          90.56       93.50     82.63     87.73     3.93   performance, though it still requires considerable resources,
+    HTMLDeface2vec (Ours)      95.79       94.81     93.59     94.20     3.51
+                                                                                which may limit its scalability in some real-world web security
+                                                                                deployments.
+ tion method. The proposed HTMLDeface2vec model achieves                                                     R EFERENCES
+ significantly better results on the dataset, reaching an accuracy
+                                                                                 [1] M. Albalawi, R. Aloufi, N. Alamrani, N. Albalawi, A. Aljaedi
+ of 95.79%, which is over 4% higher than the best-performing                         and A.R. Alharbi, “Website defacement detection and monitoring
+ previous model by Wu et al. [7]. In addition to accuracy,                           methods: A review,” Electronics, vol. 11, no. 21, p. 3573, 2022,
+ our model also demonstrates superior performance in terms                           doi:10.3390/electronics11213573
+                                                                                 [2] Tanvi. and Dr. A. Bhandari, “ML-Based Methods for Detecting Phishing
+ of F1-score. This highlights the strength of HTMLDeface2vec                         Websites: A Comprehensive Survey and Analysis,” SSRN Journal, 2024,
+ in effectively detecting web defacement attacks with a notably                      doi: 10.2139/ssrn.4829465.
+ better balance between detection accuracy and FPR compared                      [3] G. W. Burruss, C. J. Howell, D. Maimon, and F. Wang, “Web-
+                                                                                     site defacer classification: A finite mixture model approach,” So-
+ to both previous models and the baseline BERT-based ap-                             cial Science Computer Review, vol. 40, no. 3, pp. 775–787, 2022,
+ proach.                                                                             doi:10.1177/0894439321994232.
+                                                                                 [4] H. Harahap and F. Ridho, “Detection of online gambling web
+    TABLE III: Performance Comparison of Various Models                              defacement in university domains using attack signatures,” in
+                                                                                     Proc. 2024 Int. Conf. on Artificial Intelligence, Blockchain, Cloud
+    Model                     Accuracy   Precision   Recall   F1-score   FPR         Computing, and Data Analytics (ICoABCD), pp.73–78, 2024,
+    Hoang et al [6]            86.03       94.28     69.35     79.92     2.88        doi:10.1109/ICoABCD63526.2024.10704413
+    Wu et al [7]               91.28       91.26     91.28     91.26     5.98    [5] O. Almomani, A. Alsaaidah, A. A. Abu-Shareha, A. Alzaqebah, M.
+    Hoang et al [8]            96.54       96.93     94.43     95.66     2.05
+    Nguyen et al [9]           97.49       97.76     95.99     96.87     1.51        A. Almaiah, and Q. Shambour, “Enhance URL Defacement Attack
+    BERT-base-uncased          90.56       93.50     82.63     87.73     3.93        Detection Using Particle Swarm Optimization and Machine Learning,”
+    DefacementFusion (Ours)    98.97       98.76     98.39     98.57     1.24        Journal of Computational and Cognitive Engineering, Feb.14,2025,
+                                                                                     doi:10.47852/bonviewJCCE52024668.
+                                                                                 [6] X. D. Hoang and N. T. Nguyen, “Detecting Website Defacements Based
+    Table III shows the experimental results of various de-                          on Machine Learning Techniques and Attack Signatures,” Computers,
+ facement detection models to address DefacmentFusion effec-                         vol. 8, no. 2, p. 35, 2019, doi:10.3390/computers8020035.
+ tive for detecting defacement attacks. The DefacementFusion                     [7] S. Wu, X. Tong, W. Wang, G. Xin, B. Wang, and Q. Zhou, “Web-
+                                                                                     site defacements detection based on support vector machine classi-
+ model is a feature fusion approach that combines HTML                               fication method,” in Proc. 2018 Int. Conf. on Computing and Data
+ data processed by the proposed HTMLDeface2vec method,                               Engineering (ICCDE), Shanghai, China, May 4–6, 2018, pp.62–66,
+ textual data processed by the BiLSTM model, and visual data                         doi:10.1145/3219788.3219804.
+                                                                                 [8] X. D. Hoang, T. H. Nguyen, and H. D. Pham, “A novel
+ processed by the EfficientNetB0 model. DefacementFusion                             model for detecting web defacement attacks transformer using
+ demonstrates outstanding performance in detecting web de-                           plain text features,” Indonesian Journal of Electrical Engineer-
+ facement attacks, significantly surpassing previously proposed                      ing and Computer Science, vol.37, no.1, pp.232–240, Jan.2025,
+                                                                                     doi:10.11591/ijeecs.v37.i1.pp232-240.
+ methods. The proposed model reaches an accuracy of 98.97%                       [9] T. H. Nguyen, X. D. Hoang, and D. D. Nguyen, “Detecting web-
+ and an F1-score of 98.57%, while maintaining a FPR as                               site defacement attacks using web-page text and image features,”
+ low as 1.24%. These results clearly indicate the superior                           Int. J. Adv. Comput. Sci. Appl., vol.12, no.7, pp.215–222, Aug.2021,
+                                                                                     doi:10.14569/IJACSA.2021.0120725.
+ effectiveness of DefacementFusion in identifying defacement                    [10] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training
+ attacks compared to existing models.                                                of deep bidirectional transformers for language understanding,” in Pro-
+                                                                                     ceedings of the 2019 Conference of the North American Chapter of the
+                          IV. CONCLUSION                                             Association for Computational Linguistics: Human Language Technolo-
+                                                                                     gies (NAACL-HLT), vol.1 (Long and Short Papers), Minneapolis, MN,
+    This research has proposed a novel method for detecting                          USA, Jun. 2–7, 2019, pp.4171–4186, doi:10.18653/v1/N19-1423.
+ web defacement attacks based on a multimodal deep learn-                       [11] A.Vaswani, N.Shazeer, N.Parmar, J.Uszkoreit, L.Jones, A.N.Gomez,
+                                                                                     Ł.Kaiser, and I.Polosukhin, “Attention is all you need,” in Advances
+ ing approach. By integrating three distinct feature streams -                       in Neural Information Processing Systems 30 (NeurIPS 2017), Long
+ screenshots, textual content, and HTML structure - the De-                          Beach, CA, USA, Dec. 2017.
+ facementFusion model can identify anomalies across multiple                    [12] M. Tan and Q. V. Le, “EfficientNet: Rethinking Model Scaling for
+                                                                                     Convolutional Neural Networks,” in Proc. 36th Int. Conf. on Machine
+ webpage aspects. A significant contribution of this research                        Learning (ICML 2019), vol.97, P.Chaudhuri and R. Salakhutdinov, Eds.,
+ is developing the HTMLDeface2vec framework, which effi-                             Jun.2019, pp.6105–6114.
+ ciently extracts feature vectors from HTML structures - a data                 [13] ”Alexa,     Top     1    million    domains.”    [Online].   Available:
+                                                                                     https://www.kaggle.com/datasets/cheedcheed/top1m?select=top-1m.csv
+ source often overlooked in previous methods. This process                           (accessed on June 2025).
+ automates source code analysis and transforms it into vector                   [14] ”Zone-H.org.” [Online]. Available: http://zone-h.org/?hz=1 (accessed
+ representations, enabling machine learning models to detect                         June 2025).
+                                                                                [15] ”Selenium.” [Online]. Available: https://www.selenium.dev/ (accessed
+ patterns characteristic of defacement attacks. Experimental                         on June 2025).
+ results on a large dataset of 96, 220 webpages have confirmed
+ the superior effectiveness of the proposed method, achieving
+ 98.97% accuracy and a false positive rate of only 1.24%.
+
+
+
+
+Authorized licensed use limited to: UNIVERSITY OF WISCONSIN - STOUT. Downloaded on September 30,2026 at 13:45:38 UTC from IEEE Xplore. Restrictions apply.
+
