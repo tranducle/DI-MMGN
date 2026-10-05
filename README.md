@@ -12,7 +12,7 @@ However, relying strictly on the change vector discards the absolute context of 
 
 ## Code Structure
 
-- `src/`: Contains the PyTorch 2.6 implementations for the DI-MMGN framework.
+- `src/`: Contains the PyTorch 2.6 implementations for the DI-MMGN framework (rebuilt v4 reproducibility artifact package).
   - `train_dimmgn.py`: Script to train the core DI-MMGN concatenated architecture.
   - `evaluate.py`: Evaluation loop for generating F1 scores and testing false-positive rates on legitimate pairs.
   - `ablation_*.py`, `train_fusion_ablation.py`: Various ablations for modality and fusion operators.
@@ -20,9 +20,9 @@ However, relying strictly on the change vector discards the absolute context of 
 
 ## Data Availability
 
-The **LWDED Benchmark Dataset** (v2: 10,446 temporal pairs, 195 domains, four attack vectors, pre-extracted modality features — DOM graphs, CLIP visuals, HTTP signals — domain-blocked split policy, and the deterministic CMS-mutation engine) is openly available on Zenodo under CC BY 4.0:
+This repository contains the **v4 reproducibility artifact package** and the **post-training external-validation artifact package**. The numerical results are produced by the rebuilt **LWDED-v4 protocol**, which is a full-modality, registrable-family-blocked protocol containing 4,678 temporal pairs and a 936-pair held-out test set. It also includes an independent evaluation on 161 independently sourced real temporal defacement pairs.
 
-**https://doi.org/10.5281/zenodo.22051075**
+**Notice:** The previously released LWDED v2 archive remains publicly available through its Digital Object Identifier (DOI) at [https://doi.org/10.5281/zenodo.22051075](https://doi.org/10.5281/zenodo.22051075). The v4 dataset/features and complete reproduction package have not yet been assigned a public archive identifier. Therefore, the v2 DOI should not be interpreted as reproducing the v4 headline results. A versioned public release of the redistributable v4 artifacts is required for independent end-to-end reproduction.
 
 ## Usage
 
@@ -31,7 +31,7 @@ The **LWDED Benchmark Dataset** (v2: 10,446 temporal pairs, 195 domains, four at
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the training pipeline:
+3. Run the training pipeline (requires LWDED-v4 data placement):
    ```bash
    python src/train_dimmgn.py --config src/config/default.yaml
    ```
