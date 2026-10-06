@@ -20,10 +20,11 @@ However, relying strictly on the change vector discards the absolute context of 
 
 ## Data Availability
 
-This repository contains the **v4 reproducibility artifact package** and the **post-training external-validation artifact package**. The numerical results are produced by the rebuilt **LWDED-v4 protocol**, which is a full-modality, registrable-family-blocked protocol containing 4,678 temporal pairs and a 936-pair held-out test set. It also includes an independent evaluation on 161 independently sourced real temporal defacement pairs.
+This repository contains the **v4 reproducibility artifacts**, **source code**, and the **external validation package**. The numerical results are produced by the rebuilt **LWDED-v4 protocol**, which is a full-modality, registrable-family-blocked protocol containing 4,678 temporal pairs and a 936-pair held-out test set. It also includes an independent evaluation on 161 independently sourced real temporal defacement pairs.
 
-**Notice:** The previously released LWDED v2 archive remains publicly available through its Digital Object Identifier (DOI) at [https://doi.org/10.5281/zenodo.22051075](https://doi.org/10.5281/zenodo.22051075). The v4 dataset/features and complete reproduction package have not yet been assigned a public archive identifier. Therefore, the v2 DOI should not be interpreted as reproducing the v4 headline results. A versioned public release of the redistributable v4 artifacts is required for independent end-to-end reproduction.
+**Pure Dataset Access:** The pre-extracted features (DOM graphs, Visual CLIP vectors, HTTP signals, and Text embeddings) along with the frozen split manifests for the LWDED-v4 dataset have been deposited on Zenodo for public access at: [https://zenodo.org/deposit/23173126](https://zenodo.org/deposit/23173126). 
 
+*Note: The v4 protocol completely replaces the legacy LWDED v2. The numerical results reported in the associated manuscript are derived exclusively from this v4 benchmark.*
 ## Usage
 
 1. Create a Python environment.
